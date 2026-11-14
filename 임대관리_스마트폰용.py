@@ -20,6 +20,18 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
+# ==============================================================================
+# 0-1. 전역 세션 상태(Session State) 초기화 (글씨 확대 비율, 현재 탭, 선택 연/월 유지)
+# ==============================================================================
+if "font_scale_pct" not in st.session_state:
+    st.session_state["font_scale_pct"] = int(st.query_params.get("fpct", 125))
+if "active_tab" not in st.session_state:
+    st.session_state["active_tab"] = st.query_params.get("tab", "pay")
+if "sel_year" not in st.session_state:
+    st.session_state["sel_year"] = int(st.query_params.get("yr", 2026))
+if "sel_month" not in st.session_state:
+    st.session_state["sel_month"] = int(st.query_params.get("mo", 11))
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 ORIGINAL_DIR = r"C:\Users\sdgpk\.gemini\antigravity\scratch\rental_management"
 BACKUP_DIR = os.path.join(BASE_DIR, "임대관리_안전백업")
@@ -203,6 +215,10 @@ def build_full_bundle():
 
     return {
         "pro_email": DEFAULT_PRO_GOOGLE_EMAIL,
+        "session_font_pct": st.session_state["font_scale_pct"],
+        "session_tab": st.session_state["active_tab"],
+        "session_year": st.session_state["sel_year"],
+        "session_month": st.session_state["sel_month"],
         "contracts": contracts,
         "payments_map": payments_map,
         "schedules": schedules,
@@ -220,25 +236,52 @@ ICON_DATA_URI = BUNDLE_DATA["assets"].get("icon_192", "")
 # 2. Streamlit 기본 여백/헤더 완전 제거 및 전체화면(100vw x 100dvh) 모바일 뷰포트 적용
 # ==============================================================================
 st.markdown("""
+<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=0.5, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover" />
 <style>
+    /* 1. 우측 하단 빨간색 Streamlit 워터마크 및 상단/하단 기본 UI 완전 숨김 */
     header[data-testid="stHeader"],
     [data-testid="stToolbar"],
     [data-testid="stDecoration"],
     [data-testid="stStatusWidget"],
     [data-testid="stSidebar"],
     [data-testid="collapsedControl"],
+    [data-testid="manage-app-button"],
+    [data-testid="stAppDeployButton"],
+    .viewerBadge_container__r5tak,
+    .viewerBadge_link__qRIco,
+    .styles_viewerBadge__CvC9N,
+    .viewerBadge_container__1QSob,
+    [class*="viewerBadge"],
+    [class*="StatusWidget"],
+    [class*="stAppDeployButton"],
+    [class*="profileContainer"],
+    a[href*="streamlit.io/cloud"],
+    a[href*="streamlit.io"],
     #MainMenu,
     footer {
         display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
+        width: 0 !important;
+        height: 0 !important;
+        max-width: 0 !important;
+        max-height: 0 !important;
+        overflow: hidden !important;
+        position: fixed !important;
+        bottom: -9999px !important;
+        right: -9999px !important;
+        z-index: -999999 !important;
     }
     html, body, [data-testid="stAppViewContainer"], [data-testid="stApp"], .main, .block-container {
         margin: 0 !important;
         padding: 0 !important;
-        width: 100vw !important;
-        max-width: 100vw !important;
-        height: 100dvh !important;
-        overflow: hidden !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        min-height: 100dvh !important;
         background-color: #f1f5f9 !important;
+        touch-action: pan-x pan-y pinch-zoom !important;
+        -webkit-text-size-adjust: 100% !important;
     }
     iframe {
         position: fixed !important;
@@ -251,6 +294,7 @@ st.markdown("""
         padding: 0 !important;
         z-index: 999999 !important;
         display: block !important;
+        touch-action: pan-x pan-y pinch-zoom !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -262,7 +306,7 @@ MOBILE_WEBAPP_HTML = r"""<!DOCTYPE html>
 <html lang="ko">
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=0.5, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover" />
     <meta name="theme-color" content="#0d6efd" />
     <title>회기동 관리시스템</title>
     <style>
@@ -278,6 +322,8 @@ MOBILE_WEBAPP_HTML = r"""<!DOCTYPE html>
             --muted: #64748b;
             --border: #e2e8f0;
             --fs-scale: 1.25;
+            /* 125% 기본값일 때 1px, 슬라이더 조절 시 전 화면/표/하단메뉴/하위탭 100% 비례 확대·축소 */
+            --u: calc(1px * (var(--fs-scale, 1.25) / 1.25));
         }
         * {
             box-sizing: border-box;
@@ -287,16 +333,18 @@ MOBILE_WEBAPP_HTML = r"""<!DOCTYPE html>
             margin: 0;
             padding: 0;
             width: 100%;
-            height: 100%;
-            overflow-x: hidden;
+            min-height: 100%;
+            overflow-x: auto;
             font-family: -apple-system, BlinkMacSystemFont, "Pretendard", "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
             background: var(--bg);
             color: var(--text);
-            font-size: calc(14px * var(--fs-scale, 1.25));
+            font-size: calc(14 * var(--u));
             line-height: 1.42;
+            touch-action: pan-x pan-y pinch-zoom !important;
+            -webkit-text-size-adjust: 100%;
         }
         body {
-            padding-bottom: 84px;
+            padding-bottom: calc(92 * var(--u));
         }
 
         /* =========================================================
@@ -339,7 +387,7 @@ MOBILE_WEBAPP_HTML = r"""<!DOCTYPE html>
             flex: 1;
         }
         .app-title {
-            font-size: 20px;
+            font-size: calc(20 * var(--u));
             font-weight: 900;
             letter-spacing: -0.5px;
             color: #ffffff;
@@ -347,7 +395,7 @@ MOBILE_WEBAPP_HTML = r"""<!DOCTYPE html>
             word-break: keep-all;
         }
         .app-sub {
-            font-size: 13px;
+            font-size: calc(13 * var(--u));
             color: rgba(255, 255, 255, 0.92);
             margin-top: 3px;
             font-weight: 600;
@@ -366,7 +414,7 @@ MOBILE_WEBAPP_HTML = r"""<!DOCTYPE html>
             border: 1.2px solid rgba(255, 255, 255, 0.55);
             border-radius: 9px;
             padding: 7px 8px;
-            font-size: 15px;
+            font-size: calc(15 * var(--u));
             font-weight: 800;
             outline: none;
             cursor: pointer;
@@ -390,7 +438,7 @@ MOBILE_WEBAPP_HTML = r"""<!DOCTYPE html>
             border-top: 1px solid rgba(255, 255, 255, 0.28);
         }
         .font-zoom-label {
-            font-size: 13.5px;
+            font-size: calc(13.5 * var(--u));
             font-weight: 800;
             color: #ffffff;
             display: flex;
@@ -425,7 +473,7 @@ MOBILE_WEBAPP_HTML = r"""<!DOCTYPE html>
             border: none;
             border-radius: 8px;
             padding: 6px 11px;
-            font-size: 13.5px;
+            font-size: calc(13.5 * var(--u));
             font-weight: 900;
             cursor: pointer;
             box-shadow: 0 1px 3px rgba(0,0,0,0.2);
@@ -444,7 +492,7 @@ MOBILE_WEBAPP_HTML = r"""<!DOCTYPE html>
             border: 1px solid rgba(255, 255, 255, 0.45);
             border-radius: 8px;
             padding: 5px 10px;
-            font-size: 13.5px;
+            font-size: calc(13.5 * var(--u));
             font-weight: 800;
             min-width: 54px;
             text-align: center;
@@ -500,14 +548,15 @@ MOBILE_WEBAPP_HTML = r"""<!DOCTYPE html>
         .subtotal-card {
             background: var(--card);
             border-radius: 14px;
-            padding: 12px 10px;
+            padding: 12px 8px;
             margin-bottom: 14px;
             box-shadow: 0 2px 6px rgba(15, 23, 42, 0.06);
             width: 100%;
-            overflow: hidden;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
         }
         .subtotal-header {
-            font-size: 15px;
+            font-size: calc(15 * var(--u));
             font-weight: 900;
             color: #0f172a;
             margin-bottom: 8px;
@@ -520,7 +569,7 @@ MOBILE_WEBAPP_HTML = r"""<!DOCTYPE html>
             border-collapse: collapse;
             table-layout: fixed;
             text-align: center;
-            font-size: 11.5px !important;
+            font-size: calc(11.5 * var(--u)) !important;
             letter-spacing: -0.4px;
         }
         .subtotal-table th {
@@ -529,7 +578,7 @@ MOBILE_WEBAPP_HTML = r"""<!DOCTYPE html>
             padding: 6px 2px;
             border-bottom: 1.5px solid #e2e8f0;
             font-weight: 800;
-            font-size: 11px !important;
+            font-size: calc(11 * var(--u)) !important;
             line-height: 1.2;
             word-break: keep-all;
         }
@@ -537,12 +586,12 @@ MOBILE_WEBAPP_HTML = r"""<!DOCTYPE html>
             padding: 7px 2px;
             border-bottom: 1px solid #f1f5f9;
             vertical-align: middle;
-            font-size: 11.5px !important;
+            font-size: calc(11.5 * var(--u)) !important;
             line-height: 1.25;
             word-break: keep-all;
         }
         .subtotal-table .sub-caption {
-            font-size: 9.5px !important;
+            font-size: calc(9.5 * var(--u)) !important;
             color: #64748b;
             display: block;
             margin-top: 1px;
@@ -685,7 +734,8 @@ MOBILE_WEBAPP_HTML = r"""<!DOCTYPE html>
             bottom: 0;
             left: 0;
             right: 0;
-            height: 68px;
+            min-height: calc(68 * var(--u));
+            height: auto;
             background: #ffffff;
             border-top: 1.5px solid #dbeafe;
             display: flex;
@@ -693,7 +743,7 @@ MOBILE_WEBAPP_HTML = r"""<!DOCTYPE html>
             justify-content: space-around;
             align-items: center;
             z-index: 200;
-            padding-bottom: env(safe-area-inset-bottom);
+            padding: calc(6 * var(--u)) 2px calc(6 * var(--u) + env(safe-area-inset-bottom)) 2px;
             box-shadow: 0 -3px 12px rgba(13, 110, 253, 0.08);
         }
         .nav-item {
@@ -703,19 +753,19 @@ MOBILE_WEBAPP_HTML = r"""<!DOCTYPE html>
             align-items: center;
             justify-content: center;
             color: #1d4ed8;
-            font-size: 12px !important;
+            font-size: calc(12 * var(--u)) !important;
             font-weight: 800;
             background: none;
             border: none;
-            padding: 6px 2px;
+            padding: calc(4 * var(--u)) 2px;
             cursor: pointer;
             white-space: nowrap;
             letter-spacing: -0.3px;
             position: relative;
         }
         .nav-item .icon {
-            font-size: 21px !important;
-            margin-bottom: 3px;
+            font-size: calc(21 * var(--u)) !important;
+            margin-bottom: calc(3 * var(--u));
             line-height: 1;
         }
         .nav-item.active {
@@ -757,7 +807,7 @@ MOBILE_WEBAPP_HTML = r"""<!DOCTYPE html>
         }
         .form-group label {
             display: block;
-            font-size: 13px;
+            font-size: calc(13 * var(--u));
             font-weight: 800;
             color: #475569;
             margin-bottom: 4px;
@@ -767,7 +817,7 @@ MOBILE_WEBAPP_HTML = r"""<!DOCTYPE html>
             padding: 9px 10px;
             border: 1px solid var(--border);
             border-radius: 8px;
-            font-size: 14px;
+            font-size: calc(14 * var(--u));
         }
         .toast {
             position: fixed;
@@ -778,11 +828,22 @@ MOBILE_WEBAPP_HTML = r"""<!DOCTYPE html>
             color: #fff;
             padding: 10px 18px;
             border-radius: 24px;
-            font-size: 13.5px;
+            font-size: calc(13.5 * var(--u));
             font-weight: 800;
             z-index: 400;
             display: none;
             white-space: nowrap;
+        }
+        /* 하위 메뉴(계약대장, 보수·지출, 미납경보, 법령검색, 구글일정) 및 모달 내 모든 입력창/버튼/표 전역 확대 적용 */
+        input, select, textarea, button {
+            font-family: inherit;
+        }
+        #lawModalBody, #lawModalBody p, #lawModalBody div, #lawModalBody span {
+            font-size: calc(13.5 * var(--u)) !important;
+            line-height: 1.65 !important;
+        }
+        #lawModalBody h3, #lawModalBody h4, #lawModalBody b {
+            font-size: calc(14.5 * var(--u)) !important;
         }
     </style>
 </head>
@@ -800,9 +861,22 @@ MOBILE_WEBAPP_HTML = r"""<!DOCTYPE html>
             </div>
             <div class="ym-picker">
                 <select id="selYear" onchange="onYearMonthChange()">
-                    <option value="2026" selected>2026년</option>
-                    <option value="2025">2025년</option>
+                    <option value="2020">2020년</option>
+                    <option value="2021">2021년</option>
+                    <option value="2022">2022년</option>
+                    <option value="2023">2023년</option>
                     <option value="2024">2024년</option>
+                    <option value="2025">2025년</option>
+                    <option value="2026" selected>2026년</option>
+                    <option value="2027">2027년</option>
+                    <option value="2028">2028년</option>
+                    <option value="2029">2029년</option>
+                    <option value="2030">2030년</option>
+                    <option value="2031">2031년</option>
+                    <option value="2032">2032년</option>
+                    <option value="2033">2033년</option>
+                    <option value="2034">2034년</option>
+                    <option value="2035">2035년</option>
                 </select>
                 <select id="selMonth" onchange="onYearMonthChange()">
                     <option value="1">1월</option>
@@ -857,7 +931,7 @@ MOBILE_WEBAPP_HTML = r"""<!DOCTYPE html>
         <!-- TAB 2: 📋 계약대장 -->
         <section id="tab-contracts" style="display:none;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                <h3 style="margin:0; font-size:17px;">📋 39세대 계약 관리 대장</h3>
+                <h3 style="margin:0; font-size: calc(17 * var(--u));">📋 39세대 계약 관리 대장</h3>
                 <button class="action-btn btn-mark-paid" onclick="openContractModal()">+ 신규 계약 등록</button>
             </div>
             <input type="text" id="contractSearch" class="search-input" placeholder="🔍 호수 또는 세입자 검색..." oninput="renderContracts()" />
@@ -870,34 +944,34 @@ MOBILE_WEBAPP_HTML = r"""<!DOCTYPE html>
             <div class="subtotal-card" id="monthlyExpenseCard"></div>
 
             <div class="room-card" id="repairFormCard">
-                <h3 style="margin:0 0 6px 0; font-size:17px;">🛠️ 호실별 보수공사 · 사진/영수증 업로드</h3>
-                <p style="margin:0 0 10px 0; font-size:12px; color:#64748b;">
+                <h3 style="margin:0 0 6px 0; font-size: calc(17 * var(--u));">🛠️ 호실별 보수공사 · 사진/영수증 업로드</h3>
+                <p style="margin:0 0 10px 0; font-size: calc(12 * var(--u)); color:#64748b;">
                     각 세대별 일자별 보수내역·비용·수리사진·영수증을 등록하면 해당 호실에 자동 업로드되며 구글 캘린더 및 월별·연간 지출내역에 실시간 반영됩니다.
                 </p>
                 <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:8px;">
                     <div>
-                        <label style="font-size:11px; font-weight:700; color:#475569; display:block; margin-bottom:3px;">동 선택</label>
-                        <select id="repDong" onchange="updateRepairFormRooms()" style="width:100%; padding:9px; border-radius:8px; border:1px solid #cbd5e1; font-size:14px; font-weight:700;">
+                        <label style="font-size: calc(11 * var(--u)); font-weight:700; color:#475569; display:block; margin-bottom:3px;">동 선택</label>
+                        <select id="repDong" onchange="updateRepairFormRooms()" style="width:100%; padding:9px; border-radius:8px; border:1px solid #cbd5e1; font-size: calc(14 * var(--u)); font-weight:700;">
                             <option value="A동">A동</option>
                             <option value="B동">B동</option>
                             <option value="공통">공통</option>
                         </select>
                     </div>
                     <div>
-                        <label style="font-size:11px; font-weight:700; color:#475569; display:block; margin-bottom:3px;">호실 선택</label>
-                        <select id="repRoom" style="width:100%; padding:9px; border-radius:8px; border:1px solid #cbd5e1; font-size:14px; font-weight:700;">
+                        <label style="font-size: calc(11 * var(--u)); font-weight:700; color:#475569; display:block; margin-bottom:3px;">호실 선택</label>
+                        <select id="repRoom" style="width:100%; padding:9px; border-radius:8px; border:1px solid #cbd5e1; font-size: calc(14 * var(--u)); font-weight:700;">
                             <option value="공통">공통</option>
                         </select>
                     </div>
                 </div>
                 <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:8px;">
                     <div>
-                        <label style="font-size:11px; font-weight:700; color:#475569; display:block; margin-bottom:3px;">보수 일자</label>
-                        <input type="date" id="repDate" style="width:100%; padding:8px; border-radius:8px; border:1px solid #cbd5e1; font-size:14px; font-weight:700;" />
+                        <label style="font-size: calc(11 * var(--u)); font-weight:700; color:#475569; display:block; margin-bottom:3px;">보수 일자</label>
+                        <input type="date" id="repDate" style="width:100%; padding:8px; border-radius:8px; border:1px solid #cbd5e1; font-size: calc(14 * var(--u)); font-weight:700;" />
                     </div>
                     <div>
-                        <label style="font-size:11px; font-weight:700; color:#475569; display:block; margin-bottom:3px;">공사 분류</label>
-                        <select id="repCat" style="width:100%; padding:9px; border-radius:8px; border:1px solid #cbd5e1; font-size:14px;">
+                        <label style="font-size: calc(11 * var(--u)); font-weight:700; color:#475569; display:block; margin-bottom:3px;">공사 분류</label>
+                        <select id="repCat" style="width:100%; padding:9px; border-radius:8px; border:1px solid #cbd5e1; font-size: calc(14 * var(--u));">
                             <option value="보수공사/수리">보수공사/수리</option>
                             <option value="누수/배관">누수/배관</option>
                             <option value="보일러/난방">보일러/난방</option>
@@ -912,50 +986,50 @@ MOBILE_WEBAPP_HTML = r"""<!DOCTYPE html>
                 </div>
                 <div style="display:grid; grid-template-columns:1.2fr 1fr; gap:8px; margin-bottom:8px;">
                     <div>
-                        <label style="font-size:11px; font-weight:700; color:#475569; display:block; margin-bottom:3px;">수리 요약 제목</label>
-                        <input type="text" id="repTitle" placeholder="예: 싱크대 수전 교체" style="width:100%; padding:9px; border-radius:8px; border:1px solid #cbd5e1; font-size:13px;" />
+                        <label style="font-size: calc(11 * var(--u)); font-weight:700; color:#475569; display:block; margin-bottom:3px;">수리 요약 제목</label>
+                        <input type="text" id="repTitle" placeholder="예: 싱크대 수전 교체" style="width:100%; padding:9px; border-radius:8px; border:1px solid #cbd5e1; font-size: calc(13 * var(--u));" />
                     </div>
                     <div>
-                        <label style="font-size:11px; font-weight:700; color:#dc3545; display:block; margin-bottom:3px;">💰 지출 비용 (원)</label>
-                        <input type="number" id="repCost" value="50000" step="10000" style="width:100%; padding:9px; border-radius:8px; border:1px solid #cbd5e1; font-size:14px; font-weight:800; color:#dc3545;" />
+                        <label style="font-size: calc(11 * var(--u)); font-weight:700; color:#dc3545; display:block; margin-bottom:3px;">💰 지출 비용 (원)</label>
+                        <input type="number" id="repCost" value="50000" step="10000" style="width:100%; padding:9px; border-radius:8px; border:1px solid #cbd5e1; font-size: calc(14 * var(--u)); font-weight:800; color:#dc3545;" />
                     </div>
                 </div>
                 <div style="margin-bottom:8px;">
-                    <label style="font-size:11px; font-weight:700; color:#475569; display:block; margin-bottom:3px;">상세 수리 내역 / 업체 메모</label>
-                    <input type="text" id="repDesc" placeholder="수리 상세 내용 및 시공업체 메모" style="width:100%; padding:9px; border-radius:8px; border:1px solid #cbd5e1; font-size:13px;" />
+                    <label style="font-size: calc(11 * var(--u)); font-weight:700; color:#475569; display:block; margin-bottom:3px;">상세 수리 내역 / 업체 메모</label>
+                    <input type="text" id="repDesc" placeholder="수리 상세 내용 및 시공업체 메모" style="width:100%; padding:9px; border-radius:8px; border:1px solid #cbd5e1; font-size: calc(13 * var(--u));" />
                 </div>
                 <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:10px;">
                     <div style="background:#f8fafc; padding:8px; border-radius:8px; border:1px dashed #94a3b8;">
-                        <label style="font-size:11px; font-weight:800; color:#0d6efd; display:block; margin-bottom:4px;">📷 수리 현장 사진 첨부</label>
-                        <input type="file" id="repPhoto" accept="image/*" style="width:100%; font-size:11px;" />
+                        <label style="font-size: calc(11 * var(--u)); font-weight:800; color:#0d6efd; display:block; margin-bottom:4px;">📷 수리 현장 사진 첨부</label>
+                        <input type="file" id="repPhoto" accept="image/*" style="width:100%; font-size: calc(11 * var(--u));" />
                     </div>
                     <div style="background:#f8fafc; padding:8px; border-radius:8px; border:1px dashed #94a3b8;">
-                        <label style="font-size:11px; font-weight:800; color:#198754; display:block; margin-bottom:4px;">🧾 영수증 사진 첨부</label>
-                        <input type="file" id="repReceipt" accept="image/*" style="width:100%; font-size:11px;" />
+                        <label style="font-size: calc(11 * var(--u)); font-weight:800; color:#198754; display:block; margin-bottom:4px;">🧾 영수증 사진 첨부</label>
+                        <input type="file" id="repReceipt" accept="image/*" style="width:100%; font-size: calc(11 * var(--u));" />
                     </div>
                 </div>
-                <button class="action-btn btn-mark-paid" style="width:100%; padding:12px; font-size:14px;" onclick="saveRepair()">💾 호실별 보수내역 · 사진/영수증 저장 (구글캘린더 연동)</button>
+                <button class="action-btn btn-mark-paid" style="width:100%; padding:12px; font-size: calc(14 * var(--u));" onclick="saveRepair()">💾 호실별 보수내역 · 사진/영수증 저장 (구글캘린더 연동)</button>
 
                 <div id="repGcalBanner" style="display:none; margin-top:10px; padding:12px; background:#e8f5e9; border:1px solid #a5d6a7; border-radius:10px; text-align:center;">
-                    <div style="font-size:13px; font-weight:800; color:#1b5e20; margin-bottom:6px;">✅ 호실별 보수내역 및 사진/영수증이 저장되었습니다!</div>
-                    <a id="repGcalLink" href="#" target="_blank" style="display:inline-block; padding:8px 14px; background:#2e7d32; color:#fff !important; border-radius:8px; text-decoration:none; font-size:13px; font-weight:800;">📅 프로 계정 구글 캘린더에 일정 최종 저장 ↗</a>
+                    <div style="font-size: calc(13 * var(--u)); font-weight:800; color:#1b5e20; margin-bottom:6px;">✅ 호실별 보수내역 및 사진/영수증이 저장되었습니다!</div>
+                    <a id="repGcalLink" href="#" target="_blank" style="display:inline-block; padding:8px 14px; background:#2e7d32; color:#fff !important; border-radius:8px; text-decoration:none; font-size: calc(13 * var(--u)); font-weight:800;">📅 프로 계정 구글 캘린더에 일정 최종 저장 ↗</a>
                 </div>
             </div>
 
             <div class="room-card">
                 <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px; margin-bottom:10px;">
-                    <h3 style="margin:0; font-size:16px;">🔍 호실별 보수내역 · 사진/영수증 대장</h3>
+                    <h3 style="margin:0; font-size: calc(16 * var(--u));">🔍 호실별 보수내역 · 사진/영수증 대장</h3>
                     <div style="display:flex; gap:5px;">
-                        <select id="repFilterDong" onchange="onRepFilterDongChange()" style="padding:5px 7px; border-radius:6px; border:1px solid #cbd5e1; font-size:12px; font-weight:700;">
+                        <select id="repFilterDong" onchange="onRepFilterDongChange()" style="padding:5px 7px; border-radius:6px; border:1px solid #cbd5e1; font-size: calc(12 * var(--u)); font-weight:700;">
                             <option value="전체">전체 동</option>
                             <option value="A동">A동</option>
                             <option value="B동">B동</option>
                             <option value="공통">공통</option>
                         </select>
-                        <select id="repFilterRoom" onchange="renderRepairs()" style="padding:5px 7px; border-radius:6px; border:1px solid #cbd5e1; font-size:12px; font-weight:700;">
+                        <select id="repFilterRoom" onchange="renderRepairs()" style="padding:5px 7px; border-radius:6px; border:1px solid #cbd5e1; font-size: calc(12 * var(--u)); font-weight:700;">
                             <option value="전체">전체 호실</option>
                         </select>
-                        <select id="repFilterPeriod" onchange="renderRepairs()" style="padding:5px 7px; border-radius:6px; border:1px solid #cbd5e1; font-size:12px; font-weight:700;">
+                        <select id="repFilterPeriod" onchange="renderRepairs()" style="padding:5px 7px; border-radius:6px; border:1px solid #cbd5e1; font-size: calc(12 * var(--u)); font-weight:700;">
                             <option value="year">연간 전체</option>
                             <option value="month">선택 월만</option>
                             <option value="all">전체 기간</option>
@@ -968,8 +1042,8 @@ MOBILE_WEBAPP_HTML = r"""<!DOCTYPE html>
 
         <!-- TAB 4: 🚨 미납경보 -->
         <section id="tab-alerts" style="display:none;">
-            <h3 style="margin:0 0 8px 0; font-size:17px;">🚨 당월 미납 세대 경보 및 문자 발송</h3>
-            <p style="margin:0 0 12px 0; font-size:12px; color:#64748b;">
+            <h3 style="margin:0 0 8px 0; font-size: calc(17 * var(--u));">🚨 당월 미납 세대 경보 및 문자 발송</h3>
+            <p style="margin:0 0 12px 0; font-size: calc(12 * var(--u)); color:#64748b;">
                 '문자 보내기'를 누르면 스마트폰 문자앱이 열리며 납부 안내문이 자동 입력됩니다.
             </p>
             <div id="alertList"></div>
@@ -978,8 +1052,8 @@ MOBILE_WEBAPP_HTML = r"""<!DOCTYPE html>
         <!-- TAB 5: ⚖️ 법령검색 -->
         <section id="tab-law" style="display:none;">
             <div class="room-card">
-                <h3 style="margin:0 0 6px 0; font-size:17px;">⚖️ 국가법령정보 실시간 법령 · 판례 검색</h3>
-                <p style="margin:0 0 10px 0; font-size:12px; color:#64748b;">
+                <h3 style="margin:0 0 6px 0; font-size: calc(17 * var(--u));">⚖️ 국가법령정보 실시간 법령 · 판례 검색</h3>
+                <p style="margin:0 0 10px 0; font-size: calc(12 * var(--u)); color:#64748b;">
                     법제처 Open API 데이터와 연동됩니다. 아래 분류나 추천 검색어를 터치해 보세요.
                 </p>
                 <div style="display:flex; gap:8px; margin-bottom:10px;">
@@ -996,7 +1070,7 @@ MOBILE_WEBAPP_HTML = r"""<!DOCTYPE html>
                     <button class="pill-btn" onclick="quickLawSearch('농지법')">농지법</button>
                 </div>
                 <div style="display:flex; gap:6px; margin-bottom:10px;">
-                    <input type="text" id="lawQuery" value="주택임대차" placeholder="검색어 입력 (예: 주택임대차, 계약갱신)" onkeydown="if(event.key==='Enter')searchLaw()" style="flex:1; padding:10px 12px; border-radius:10px; border:1px solid #cbd5e1; font-size:14px;" />
+                    <input type="text" id="lawQuery" value="주택임대차" placeholder="검색어 입력 (예: 주택임대차, 계약갱신)" onkeydown="if(event.key==='Enter')searchLaw()" style="flex:1; padding:10px 12px; border-radius:10px; border:1px solid #cbd5e1; font-size: calc(14 * var(--u));" />
                     <button class="action-btn btn-mark-paid" style="padding:10px 16px;" onclick="searchLaw()">🔍 검색</button>
                 </div>
                 <div id="lawResults"></div>
@@ -1006,30 +1080,30 @@ MOBILE_WEBAPP_HTML = r"""<!DOCTYPE html>
         <!-- TAB 6: 📅 구글일정 -->
         <section id="tab-calendar" style="display:none;">
             <div class="room-card">
-                <h3 style="margin:0 0 6px 0; font-size:17px;">➕ 새 일정 및 호실별 보수공사 등록</h3>
-                <p style="margin:0 0 10px 0; font-size:12px; color:#64748b;">
+                <h3 style="margin:0 0 6px 0; font-size: calc(17 * var(--u));">➕ 새 일정 및 호실별 보수공사 등록</h3>
+                <p style="margin:0 0 10px 0; font-size: calc(12 * var(--u)); color:#64748b;">
                     프로 요금제 구글 계정(<b>ferriolacipriano342@gmail.com</b>) 캘린더와 연동됩니다.
                 </p>
                 <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:8px;">
                     <div>
-                        <label style="font-size:11px; font-weight:700; color:#475569; display:block; margin-bottom:3px;">동 구분</label>
-                        <select id="scDong" onchange="updateScheduleRooms()" style="width:100%; padding:9px; border-radius:8px; border:1px solid #cbd5e1; font-size:14px; font-weight:700;">
+                        <label style="font-size: calc(11 * var(--u)); font-weight:700; color:#475569; display:block; margin-bottom:3px;">동 구분</label>
+                        <select id="scDong" onchange="updateScheduleRooms()" style="width:100%; padding:9px; border-radius:8px; border:1px solid #cbd5e1; font-size: calc(14 * var(--u)); font-weight:700;">
                             <option value="A동">A동</option>
                             <option value="B동">B동</option>
                             <option value="공통">공통</option>
                         </select>
                     </div>
                     <div>
-                        <label style="font-size:11px; font-weight:700; color:#475569; display:block; margin-bottom:3px;">호수 선택</label>
-                        <select id="scRoom" style="width:100%; padding:9px; border-radius:8px; border:1px solid #cbd5e1; font-size:14px; font-weight:700;">
+                        <label style="font-size: calc(11 * var(--u)); font-weight:700; color:#475569; display:block; margin-bottom:3px;">호수 선택</label>
+                        <select id="scRoom" style="width:100%; padding:9px; border-radius:8px; border:1px solid #cbd5e1; font-size: calc(14 * var(--u)); font-weight:700;">
                             <option value="공통">공통</option>
                         </select>
                     </div>
                 </div>
                 <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:8px;">
                     <div>
-                        <label style="font-size:11px; font-weight:700; color:#475569; display:block; margin-bottom:3px;">일정 / 공사 유형</label>
-                        <select id="scType" style="width:100%; padding:9px; border-radius:8px; border:1px solid #cbd5e1; font-size:14px;">
+                        <label style="font-size: calc(11 * var(--u)); font-weight:700; color:#475569; display:block; margin-bottom:3px;">일정 / 공사 유형</label>
+                        <select id="scType" style="width:100%; padding:9px; border-radius:8px; border:1px solid #cbd5e1; font-size: calc(14 * var(--u));">
                             <option value="보수공사/수리">🛠️ 보수공사/수리</option>
                             <option value="누수/배관 보수">🚰 누수/배관 보수</option>
                             <option value="보일러/난방 수리">🔥 보일러/난방 수리</option>
@@ -1043,36 +1117,36 @@ MOBILE_WEBAPP_HTML = r"""<!DOCTYPE html>
                         </select>
                     </div>
                     <div>
-                        <label style="font-size:11px; font-weight:700; color:#475569; display:block; margin-bottom:3px;">일정 / 보수 날짜</label>
-                        <input type="date" id="scDate" style="width:100%; padding:8px; border-radius:8px; border:1px solid #cbd5e1; font-size:14px; font-weight:700;" />
+                        <label style="font-size: calc(11 * var(--u)); font-weight:700; color:#475569; display:block; margin-bottom:3px;">일정 / 보수 날짜</label>
+                        <input type="date" id="scDate" style="width:100%; padding:8px; border-radius:8px; border:1px solid #cbd5e1; font-size: calc(14 * var(--u)); font-weight:700;" />
                     </div>
                 </div>
                 <div style="display:grid; grid-template-columns:1.2fr 1fr; gap:8px; margin-bottom:8px;">
                     <div>
-                        <label style="font-size:11px; font-weight:700; color:#475569; display:block; margin-bottom:3px;">상세 일정/수리 제목</label>
-                        <input type="text" id="scTitle" placeholder="예: 싱크대 수전 교체" style="width:100%; padding:9px; border-radius:8px; border:1px solid #cbd5e1; font-size:13px;" />
+                        <label style="font-size: calc(11 * var(--u)); font-weight:700; color:#475569; display:block; margin-bottom:3px;">상세 일정/수리 제목</label>
+                        <input type="text" id="scTitle" placeholder="예: 싱크대 수전 교체" style="width:100%; padding:9px; border-radius:8px; border:1px solid #cbd5e1; font-size: calc(13 * var(--u));" />
                     </div>
                     <div>
-                        <label style="font-size:11px; font-weight:700; color:#dc3545; display:block; margin-bottom:3px;">💰 보수 비용 (원)</label>
-                        <input type="number" id="scCost" value="0" step="10000" style="width:100%; padding:9px; border-radius:8px; border:1px solid #cbd5e1; font-size:13px; font-weight:800; color:#dc3545;" />
+                        <label style="font-size: calc(11 * var(--u)); font-weight:700; color:#dc3545; display:block; margin-bottom:3px;">💰 보수 비용 (원)</label>
+                        <input type="number" id="scCost" value="0" step="10000" style="width:100%; padding:9px; border-radius:8px; border:1px solid #cbd5e1; font-size: calc(13 * var(--u)); font-weight:800; color:#dc3545;" />
                     </div>
                 </div>
                 <div style="margin-bottom:8px;">
-                    <label style="font-size:11px; font-weight:700; color:#475569; display:block; margin-bottom:3px;">수리 내역 / 메모 설명</label>
-                    <input type="text" id="scDesc" placeholder="수리 상세 내역, 시공업체 또는 특이사항 입력" style="width:100%; padding:9px; border-radius:8px; border:1px solid #cbd5e1; font-size:13px;" />
+                    <label style="font-size: calc(11 * var(--u)); font-weight:700; color:#475569; display:block; margin-bottom:3px;">수리 내역 / 메모 설명</label>
+                    <input type="text" id="scDesc" placeholder="수리 상세 내역, 시공업체 또는 특이사항 입력" style="width:100%; padding:9px; border-radius:8px; border:1px solid #cbd5e1; font-size: calc(13 * var(--u));" />
                 </div>
-                <button class="action-btn btn-mark-paid" style="width:100%; padding:11px; font-size:14px;" onclick="addSchedule()">📅 일정 등록 및 호실별 보수내역 업로드</button>
+                <button class="action-btn btn-mark-paid" style="width:100%; padding:11px; font-size: calc(14 * var(--u));" onclick="addSchedule()">📅 일정 등록 및 호실별 보수내역 업로드</button>
 
                 <div id="gcalSaveBanner" style="display:none; margin-top:10px; padding:12px; background:#e8f5e9; border:1px solid #a5d6a7; border-radius:10px; text-align:center;">
-                    <div style="font-size:13px; font-weight:800; color:#1b5e20; margin-bottom:6px;">✅ 시스템 및 호실별 보수대장에 등록되었습니다!</div>
-                    <a id="gcalSaveLink" href="#" target="_blank" style="display:inline-block; padding:8px 14px; background:#2e7d32; color:#fff !important; border-radius:8px; text-decoration:none; font-size:13px; font-weight:800;">구글 캘린더에 일정 최종 저장 ↗</a>
+                    <div style="font-size: calc(13 * var(--u)); font-weight:800; color:#1b5e20; margin-bottom:6px;">✅ 시스템 및 호실별 보수대장에 등록되었습니다!</div>
+                    <a id="gcalSaveLink" href="#" target="_blank" style="display:inline-block; padding:8px 14px; background:#2e7d32; color:#fff !important; border-radius:8px; text-decoration:none; font-size: calc(13 * var(--u)); font-weight:800;">구글 캘린더에 일정 최종 저장 ↗</a>
                 </div>
             </div>
 
             <div class="room-card">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
                     <button class="action-btn btn-mark-unpaid" style="padding:6px 12px;" onclick="moveCalMonth(-1)">◀ 이전달</button>
-                    <div id="calHeaderTitle" style="font-size:16px; font-weight:800; color:#0f172a;"></div>
+                    <div id="calHeaderTitle" style="font-size: calc(16 * var(--u)); font-weight:800; color:#0f172a;"></div>
                     <button class="action-btn btn-mark-unpaid" style="padding:6px 12px;" onclick="moveCalMonth(1)">다음달 ▶</button>
                 </div>
                 <div id="interactiveCalendar"></div>
@@ -1080,8 +1154,8 @@ MOBILE_WEBAPP_HTML = r"""<!DOCTYPE html>
 
             <div class="room-card">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-                    <h3 style="margin:0; font-size:16px;">📋 등록된 일정 목록</h3>
-                    <select id="scFilterDong" onchange="renderSchedules()" style="padding:5px 8px; border-radius:6px; border:1px solid #cbd5e1; font-size:12px; font-weight:700;">
+                    <h3 style="margin:0; font-size: calc(16 * var(--u));">📋 등록된 일정 목록</h3>
+                    <select id="scFilterDong" onchange="renderSchedules()" style="padding:5px 8px; border-radius:6px; border:1px solid #cbd5e1; font-size: calc(12 * var(--u)); font-weight:700;">
                         <option value="전체">전체 동</option>
                         <option value="A동">A동</option>
                         <option value="B동">B동</option>
@@ -1092,10 +1166,10 @@ MOBILE_WEBAPP_HTML = r"""<!DOCTYPE html>
             </div>
 
             <div class="room-card">
-                <h3 style="margin:0 0 6px 0; font-size:16px;">🌐 프로 계정 구글 캘린더 실시간 달력</h3>
+                <h3 style="margin:0 0 6px 0; font-size: calc(16 * var(--u));">🌐 프로 계정 구글 캘린더 실시간 달력</h3>
                 <div style="display:flex; gap:6px; margin-bottom:8px;">
-                    <input type="text" id="gcalIdInput" value="ferriolacipriano342@gmail.com" placeholder="구글 이메일" style="flex:1; padding:8px 10px; border-radius:8px; border:1px solid #cbd5e1; font-size:12px;" />
-                    <button class="action-btn btn-mark-paid" style="padding:8px 12px; font-size:12px;" onclick="updateGoogleCalIframe()">연동</button>
+                    <input type="text" id="gcalIdInput" value="ferriolacipriano342@gmail.com" placeholder="구글 이메일" style="flex:1; padding:8px 10px; border-radius:8px; border:1px solid #cbd5e1; font-size: calc(12 * var(--u));" />
+                    <button class="action-btn btn-mark-paid" style="padding:8px 12px; font-size: calc(12 * var(--u));" onclick="updateGoogleCalIframe()">연동</button>
                 </div>
                 <div style="border:1px solid #cbd5e1; border-radius:10px; overflow:hidden; background:#fff;">
                     <iframe id="gcalIframe" src="https://calendar.google.com/calendar/embed?src=ferriolacipriano342%40gmail.com&src=ko.south_korea%23holiday%40group.v.calendar.google.com&ctz=Asia%2FSeoul&mode=MONTH&showTitle=0&showNav=1&showDate=1&showPrint=0&showTabs=0&showCalendars=0" style="border:0; width:100%; height:400px;" frameborder="0" scrolling="no"></iframe>
@@ -1107,7 +1181,7 @@ MOBILE_WEBAPP_HTML = r"""<!DOCTYPE html>
     <!-- 계약 등록/수정 모달 -->
     <div id="contractModal" class="modal-backdrop">
         <div class="modal-card">
-            <h3 id="modalTitle" style="margin:0 0 12px 0; font-size:17px;">계약 정보 등록/수정</h3>
+            <h3 id="modalTitle" style="margin:0 0 12px 0; font-size: calc(17 * var(--u));">계약 정보 등록/수정</h3>
             <input type="hidden" id="editId" />
             <div class="form-group">
                 <label>동 구분</label>
@@ -1159,15 +1233,15 @@ MOBILE_WEBAPP_HTML = r"""<!DOCTYPE html>
     <!-- 전화번호 입력 및 문자 발송 모달 -->
     <div id="phoneModal" class="modal-backdrop">
         <div class="modal-card">
-            <h3 id="phoneModalTitle" style="margin:0 0 8px 0; font-size:17px;">📞 호별 계약자 전화번호 입력 · 문자 발송</h3>
+            <h3 id="phoneModalTitle" style="margin:0 0 8px 0; font-size: calc(17 * var(--u));">📞 호별 계약자 전화번호 입력 · 문자 발송</h3>
             <input type="hidden" id="quickPhoneContractId" />
             <div class="form-group">
                 <label>📞 계약자 전화번호</label>
-                <input type="tel" id="quickPhoneInput" placeholder="예: 010-1234-5678" style="font-size:16px; font-weight:700;" />
+                <input type="tel" id="quickPhoneInput" placeholder="예: 010-1234-5678" style="font-size: calc(16 * var(--u)); font-weight:700;" />
             </div>
             <div class="form-group">
                 <label>💬 발송할 문자 메시지 내용</label>
-                <textarea id="quickSmsBody" rows="4" style="width:100%; padding:9px 10px; border:1px solid #cbd5e1; border-radius:8px; font-size:13px; font-family:inherit;"></textarea>
+                <textarea id="quickSmsBody" rows="4" style="width:100%; padding:9px 10px; border:1px solid #cbd5e1; border-radius:8px; font-size: calc(13 * var(--u)); font-family:inherit;"></textarea>
             </div>
             <div style="display:flex; gap:8px; margin-top:12px;">
                 <button class="action-btn btn-mark-paid" style="flex:1;" onclick="saveQuickPhone(false)">💾 번호만 저장</button>
@@ -1184,12 +1258,12 @@ MOBILE_WEBAPP_HTML = r"""<!DOCTYPE html>
         <div class="modal-card" style="max-width:600px; max-height:88vh; display:flex; flex-direction:column; padding:0; overflow:hidden;">
             <div style="padding:14px 16px; background:#0f172a; color:#fff; display:flex; justify-content:space-between; align-items:flex-start; gap:10px;">
                 <div style="flex:1;">
-                    <div id="lawModalTitle" style="font-size:16px; font-weight:800; line-height:1.35;">법령/판례 본문</div>
-                    <div id="lawModalMeta" style="font-size:11px; color:#cbd5e1; margin-top:4px;"></div>
+                    <div id="lawModalTitle" style="font-size: calc(16 * var(--u)); font-weight:800; line-height:1.35;">법령/판례 본문</div>
+                    <div id="lawModalMeta" style="font-size: calc(11 * var(--u)); color:#cbd5e1; margin-top:4px;"></div>
                 </div>
-                <button type="button" onclick="closeLawDetailModal()" style="background:#dc3545; color:#fff; border:none; border-radius:8px; padding:6px 12px; font-size:12px; font-weight:800; cursor:pointer; white-space:nowrap;">✕ 닫기</button>
+                <button type="button" onclick="closeLawDetailModal()" style="background:#dc3545; color:#fff; border:none; border-radius:8px; padding:6px 12px; font-size: calc(12 * var(--u)); font-weight:800; cursor:pointer; white-space:nowrap;">✕ 닫기</button>
             </div>
-            <div id="lawModalBody" style="padding:14px 16px; overflow-y:auto; flex:1; font-size:14px; background:#ffffff;"></div>
+            <div id="lawModalBody" style="padding:14px 16px; overflow-y:auto; flex:1; font-size: calc(14 * var(--u)); background:#ffffff;"></div>
         </div>
     </div>
 
@@ -1197,8 +1271,8 @@ MOBILE_WEBAPP_HTML = r"""<!DOCTYPE html>
     <div id="imagePreviewModal" class="modal-backdrop" onclick="closeImagePreview()">
         <div class="modal-card" style="max-width:520px; padding:12px; text-align:center;" onclick="event.stopPropagation()">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-                <div id="imgPreviewTitle" style="font-size:14px; font-weight:800; color:#0f172a;">📷 사진/영수증 원본 보기</div>
-                <button onclick="closeImagePreview()" style="background:#dc3545; color:#fff; border:none; border-radius:8px; padding:5px 10px; font-size:12px; font-weight:800; cursor:pointer;">✕ 닫기</button>
+                <div id="imgPreviewTitle" style="font-size: calc(14 * var(--u)); font-weight:800; color:#0f172a;">📷 사진/영수증 원본 보기</div>
+                <button onclick="closeImagePreview()" style="background:#dc3545; color:#fff; border:none; border-radius:8px; padding:5px 10px; font-size: calc(12 * var(--u)); font-weight:800; cursor:pointer;">✕ 닫기</button>
             </div>
             <img id="imgPreviewEl" src="" style="max-width:100%; max-height:74vh; border-radius:10px; border:1px solid #cbd5e1;" />
         </div>
@@ -1344,7 +1418,11 @@ MOBILE_WEBAPP_HTML = r"""<!DOCTYPE html>
         }
 
         function onYearMonthChange() {
+            calYear = Number(document.getElementById('selYear').value || 2026);
+            calMonth = Number(document.getElementById('selMonth').value || 11);
             renderAllViews();
+            applyFontScale(false);
+            syncSessionQueryParams();
         }
 
         function renderAllViews() {
@@ -1503,12 +1581,12 @@ MOBILE_WEBAPP_HTML = r"""<!DOCTYPE html>
                         <div style="flex:1;">
                             <div class="room-info-line"><b>청구액: ${fmtWon(r.total_bill)}</b> <span style="color:#64748b;">(월세 ${fmtWon(r.rent)} + 관리비 ${fmtWon(r.maintenance_fee)})</span></div>
                             <div class="room-info-line" style="display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-top:4px;">
-                                <span style="font-size:12px; color:${phoneVal ? '#0f172a' : '#94a3b8'}; font-weight:700;">📞 ${phoneVal || '전화번호 미등록'}</span>
-                                <button onclick="openPhoneModal(${r.contract_id})" style="border:1px solid #cbd5e1; background:#f8fafc; color:#0d6efd; border-radius:6px; padding:3px 7px; font-size:11px; font-weight:800; cursor:pointer;">${phoneVal ? '번호수정/문자' : '+ 번호입력/문자'}</button>
-                                ${phoneVal ? `<a href="${smsHref}" style="background:#198754; color:#fff !important; border-radius:6px; padding:3px 8px; font-size:11px; font-weight:800; text-decoration:none;">💬 문자보내기</a>` : ''}
-                                ${phoneVal ? `<a href="tel:${phoneVal}" style="background:#0d6efd; color:#fff !important; border-radius:6px; padding:3px 8px; font-size:11px; font-weight:800; text-decoration:none;">📞 전화</a>` : ''}
+                                <span style="font-size: calc(12 * var(--u)); color:${phoneVal ? '#0f172a' : '#94a3b8'}; font-weight:700;">📞 ${phoneVal || '전화번호 미등록'}</span>
+                                <button onclick="openPhoneModal(${r.contract_id})" style="border:1px solid #cbd5e1; background:#f8fafc; color:#0d6efd; border-radius:6px; padding:3px 7px; font-size: calc(11 * var(--u)); font-weight:800; cursor:pointer;">${phoneVal ? '번호수정/문자' : '+ 번호입력/문자'}</button>
+                                ${phoneVal ? `<a href="${smsHref}" style="background:#198754; color:#fff !important; border-radius:6px; padding:3px 8px; font-size: calc(11 * var(--u)); font-weight:800; text-decoration:none;">💬 문자보내기</a>` : ''}
+                                ${phoneVal ? `<a href="tel:${phoneVal}" style="background:#0d6efd; color:#fff !important; border-radius:6px; padding:3px 8px; font-size: calc(11 * var(--u)); font-weight:800; text-decoration:none;">📞 전화</a>` : ''}
                             </div>
-                            ${r.note ? `<div class="room-info-line" style="color:#64748b; font-size:12px;">📝 ${r.note}</div>` : ''}
+                            ${r.note ? `<div class="room-info-line" style="color:#64748b; font-size: calc(12 * var(--u));">📝 ${r.note}</div>` : ''}
                         </div>
                         <button class="action-btn ${btnClass}" onclick="togglePay(${r.contract_id}, '${nextStatus}', '${r.dong} ${r.room}호')">
                             ${btnLabel}
@@ -1559,24 +1637,24 @@ MOBILE_WEBAPP_HTML = r"""<!DOCTYPE html>
                             ${badgeHtml}
                         </div>
                         <div style="display:flex; gap:5px; flex-wrap:wrap;">
-                            <button class="action-btn" style="padding:5px 8px; font-size:11px; background:#fff7ed; color:#c2410c; border:1px solid #fed7aa;" onclick="openRoomRepairs('${r.dong}', '${r.room}')">🛠️ 보수/영수증</button>
-                            <button class="action-btn" style="padding:5px 8px; font-size:11px; background:#eff6ff; color:#0d6efd; border:1px solid #bfdbfe;" onclick="openPhoneModal(${r.contract_id})">📞 번호/문자</button>
-                            <button class="action-btn btn-mark-unpaid" style="padding:5px 9px; font-size:11px;" onclick="openContractModal(${r.contract_id})">수정</button>
+                            <button class="action-btn" style="padding:5px 8px; font-size: calc(11 * var(--u)); background:#fff7ed; color:#c2410c; border:1px solid #fed7aa;" onclick="openRoomRepairs('${r.dong}', '${r.room}')">🛠️ 보수/영수증</button>
+                            <button class="action-btn" style="padding:5px 8px; font-size: calc(11 * var(--u)); background:#eff6ff; color:#0d6efd; border:1px solid #bfdbfe;" onclick="openPhoneModal(${r.contract_id})">📞 번호/문자</button>
+                            <button class="action-btn btn-mark-unpaid" style="padding:5px 9px; font-size: calc(11 * var(--u));" onclick="openContractModal(${r.contract_id})">수정</button>
                         </div>
                     </div>
-                    <div style="font-size:13px; color:#334155; line-height:1.6;">
+                    <div style="font-size: calc(13 * var(--u)); color:#334155; line-height:1.6;">
                         <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:2px;">
                             <span>📞 전화번호: <b style="color:${phoneVal ? '#0f172a' : '#94a3b8'};">${phoneVal || '미등록 (터치하여 입력)'}</b></span>
-                            ${phoneVal ? `<a href="${smsHref}" style="background:#198754; color:#fff !important; border-radius:6px; padding:2px 8px; font-size:11px; font-weight:800; text-decoration:none;">💬 문자보내기</a>` : ''}
-                            ${phoneVal ? `<a href="tel:${phoneVal}" style="background:#0d6efd; color:#fff !important; border-radius:6px; padding:2px 8px; font-size:11px; font-weight:800; text-decoration:none;">📞 전화걸기</a>` : ''}
+                            ${phoneVal ? `<a href="${smsHref}" style="background:#198754; color:#fff !important; border-radius:6px; padding:2px 8px; font-size: calc(11 * var(--u)); font-weight:800; text-decoration:none;">💬 문자보내기</a>` : ''}
+                            ${phoneVal ? `<a href="tel:${phoneVal}" style="background:#0d6efd; color:#fff !important; border-radius:6px; padding:2px 8px; font-size: calc(11 * var(--u)); font-weight:800; text-decoration:none;">📞 전화걸기</a>` : ''}
                         </div>
                         <div>보증금: <b>${fmtWon(r.deposit)}</b> | 월세: <b>${fmtWon(r.rent)}</b> | 관리비: <b>${fmtWon(r.maintenance_fee)}</b></div>
                         <div>만기일: <b>${r.expiry_date || '-'}</b> <span style="color:${r.expiry_urgent ? '#dc3545' : '#0d6efd'}; font-weight:700;">(${r.expiry_badge || ''})</span></div>
-                        <div style="margin-top:3px; font-size:12px;">
+                        <div style="margin-top:3px; font-size: calc(12 * var(--u));">
                             🛠️ 보수공사 이력: <b style="color:${roomRepairs.length > 0 ? '#dc3545' : '#64748b'};">${roomRepairs.length}건 (누적 지출 ${fmtWon(roomRepCost)})</b>
                             <span onclick="openRoomRepairs('${r.dong}', '${r.room}')" style="color:#0d6efd; font-weight:800; cursor:pointer; margin-left:6px; text-decoration:underline;">내역·사진 보기 ↗</span>
                         </div>
-                        ${r.note ? `<div style="color:#64748b; font-size:12px;">비고: ${r.note}</div>` : ''}
+                        ${r.note ? `<div style="color:#64748b; font-size: calc(12 * var(--u));">비고: ${r.note}</div>` : ''}
                     </div>
                 </div>`;
             }).join('');
@@ -1855,7 +1933,7 @@ MOBILE_WEBAPP_HTML = r"""<!DOCTYPE html>
 
             const listBox = document.getElementById('repairList');
             if (list.length === 0) {
-                listBox.innerHTML = `<div style="font-size:13px; color:#64748b; padding:14px 0; text-align:center;">조회 조건에 해당하는 보수공사 내역이 없습니다.</div>`;
+                listBox.innerHTML = `<div style="font-size: calc(13 * var(--u)); color:#64748b; padding:14px 0; text-align:center;">조회 조건에 해당하는 보수공사 내역이 없습니다.</div>`;
                 return;
             }
 
@@ -1868,14 +1946,14 @@ MOBILE_WEBAPP_HTML = r"""<!DOCTYPE html>
                 <div style="padding:12px 0; border-top:1px solid #e2e8f0;">
                     <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:8px;">
                         <div>
-                            <span style="font-size:14px; font-weight:800; color:#0f172a;">🛠️ [${r.repair_date}] ${r.dong} ${rmDisp} — ${r.title}</span>
-                            <div style="font-size:12px; color:#475569; margin-top:4px;"><b>내역:</b> ${r.description || '-'}</div>
+                            <span style="font-size: calc(14 * var(--u)); font-weight:800; color:#0f172a;">🛠️ [${r.repair_date}] ${r.dong} ${rmDisp} — ${r.title}</span>
+                            <div style="font-size: calc(12 * var(--u)); color:#475569; margin-top:4px;"><b>내역:</b> ${r.description || '-'}</div>
                         </div>
                         <div style="text-align:right;">
-                            <div style="font-size:15px; font-weight:900; color:#dc3545;">${fmtWon(r.cost)}</div>
+                            <div style="font-size: calc(15 * var(--u)); font-weight:900; color:#dc3545;">${fmtWon(r.cost)}</div>
                             <div style="display:flex; gap:4px; margin-top:4px;">
-                                <a href="${gLink}" target="_blank" style="padding:3px 7px; background:#e8f5e9; color:#1b5e20; border:1px solid #a5d6a7; border-radius:5px; font-size:10px; font-weight:800; text-decoration:none;">📅 캘린더 ↗</a>
-                                <button onclick="deleteRepair(${r.id})" style="padding:3px 7px; background:#fee2e2; color:#991b1b; border:none; border-radius:5px; font-size:10px; font-weight:800; cursor:pointer;">삭제</button>
+                                <a href="${gLink}" target="_blank" style="padding:3px 7px; background:#e8f5e9; color:#1b5e20; border:1px solid #a5d6a7; border-radius:5px; font-size: calc(10 * var(--u)); font-weight:800; text-decoration:none;">📅 캘린더 ↗</a>
+                                <button onclick="deleteRepair(${r.id})" style="padding:3px 7px; background:#fee2e2; color:#991b1b; border:none; border-radius:5px; font-size: calc(10 * var(--u)); font-weight:800; cursor:pointer;">삭제</button>
                             </div>
                         </div>
                     </div>
@@ -1966,10 +2044,10 @@ MOBILE_WEBAPP_HTML = r"""<!DOCTYPE html>
                         <div class="room-title">🚪 ${r.dong} ${r.room}호 (${r.tenant_name}님)</div>
                         <span class="status-pill-unpaid">미납 ${fmtWon(r.total_bill)}</span>
                     </div>
-                    <div style="font-size:12px; color:#64748b; margin-bottom:10px; line-height:1.6;">
+                    <div style="font-size: calc(12 * var(--u)); color:#64748b; margin-bottom:10px; line-height:1.6;">
                         월세 ${fmtWon(r.rent)} + 관리비 ${fmtWon(r.maintenance_fee)}<br/>
                         📞 전화번호: <b style="color:${phoneVal ? '#0f172a' : '#dc3545'};">${phoneVal || '미등록'}</b>
-                        <button onclick="openPhoneModal(${r.contract_id})" style="margin-left:6px; border:1px solid #cbd5e1; background:#f8fafc; color:#0d6efd; border-radius:6px; padding:2px 7px; font-size:11px; font-weight:800; cursor:pointer;">${phoneVal ? '번호수정' : '+ 번호입력'}</button>
+                        <button onclick="openPhoneModal(${r.contract_id})" style="margin-left:6px; border:1px solid #cbd5e1; background:#f8fafc; color:#0d6efd; border-radius:6px; padding:2px 7px; font-size: calc(11 * var(--u)); font-weight:800; cursor:pointer;">${phoneVal ? '번호수정' : '+ 번호입력'}</button>
                     </div>
                     <div style="display:flex; gap:8px;">
                         <a href="${smsHref}" class="action-btn btn-mark-paid" style="flex:1.2; text-align:center; text-decoration:none;">💬 문자 보내기</a>
@@ -2013,19 +2091,19 @@ MOBILE_WEBAPP_HTML = r"""<!DOCTYPE html>
 
             if (!items || items.length === 0) {
                 const extUrl = `https://www.law.go.kr/lsSc.do?menuId=1&query=${encodeURIComponent(query)}`;
-                box.innerHTML = `<div style="padding:12px 0; font-size:13px;">국가법령정보센터에서 <b>'${query}'</b> 실시간 결과를 확인하세요:<br/><a href="${extUrl}" target="_blank" style="display:inline-block; margin-top:8px; padding:8px 14px; background:#0d6efd; color:#fff; border-radius:8px; text-decoration:none; font-weight:800;">국가법령정보센터 '${query}' 바로가기 ↗</a></div>`;
+                box.innerHTML = `<div style="padding:12px 0; font-size: calc(13 * var(--u));">국가법령정보센터에서 <b>'${query}'</b> 실시간 결과를 확인하세요:<br/><a href="${extUrl}" target="_blank" style="display:inline-block; margin-top:8px; padding:8px 14px; background:#0d6efd; color:#fff; border-radius:8px; text-decoration:none; font-weight:800;">국가법령정보센터 '${query}' 바로가기 ↗</a></div>`;
                 return;
             }
 
             box.innerHTML = `
-                <div style="font-size:12px; font-weight:700; color:#198754; margin-bottom:6px;">총 ${items.length}건이 조회되었습니다. ('📖 본문 보기' 터치 시 즉시 표시)</div>
+                <div style="font-size: calc(12 * var(--u)); font-weight:700; color:#198754; margin-bottom:6px;">총 ${items.length}건이 조회되었습니다. ('📖 본문 보기' 터치 시 즉시 표시)</div>
             ` + items.map((it, idx) => `
                 <div style="padding:12px 0; border-top:1px solid #f1f5f9;">
                     <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:8px;">
-                        <div onclick="openLawDetail('${it.target}', '${it.id}', '${it.title.replace(/'/g, '')}')" style="font-size:14px; font-weight:800; color:${target === 'law' ? '#0d6efd' : '#198754'}; flex:1; cursor:pointer;">${idx + 1}. ${it.title}</div>
-                        <button onclick="openLawDetail('${it.target}', '${it.id}', '${it.title.replace(/'/g, '')}')" style="border:none; cursor:pointer; padding:6px 11px; background:${target === 'law' ? '#0d6efd' : '#198754'}; color:#fff !important; border-radius:6px; font-size:12px; font-weight:800; white-space:nowrap;">📖 본문 보기</button>
+                        <div onclick="openLawDetail('${it.target}', '${it.id}', '${it.title.replace(/'/g, '')}')" style="font-size: calc(14 * var(--u)); font-weight:800; color:${target === 'law' ? '#0d6efd' : '#198754'}; flex:1; cursor:pointer;">${idx + 1}. ${it.title}</div>
+                        <button onclick="openLawDetail('${it.target}', '${it.id}', '${it.title.replace(/'/g, '')}')" style="border:none; cursor:pointer; padding:6px 11px; background:${target === 'law' ? '#0d6efd' : '#198754'}; color:#fff !important; border-radius:6px; font-size: calc(12 * var(--u)); font-weight:800; white-space:nowrap;">📖 본문 보기</button>
                     </div>
-                    <div style="font-size:12px; color:#64748b; margin-top:4px;">${it.sub}</div>
+                    <div style="font-size: calc(12 * var(--u)); color:#64748b; margin-top:4px;">${it.sub}</div>
                 </div>
             `).join('');
         }
@@ -2124,7 +2202,7 @@ MOBILE_WEBAPP_HTML = r"""<!DOCTYPE html>
 
             const daysHeader = ['일', '월', '화', '수', '목', '금', '토'].map((d, idx) => {
                 const col = idx === 0 ? '#dc3545' : (idx === 6 ? '#0d6efd' : '#475569');
-                return `<th style="padding:6px 2px; font-size:12px; color:${col}; border-bottom:1px solid #e2e8f0;">${d}</th>`;
+                return `<th style="padding:6px 2px; font-size: calc(12 * var(--u)); color:${col}; border-bottom:1px solid #e2e8f0;">${d}</th>`;
             }).join('');
 
             let cells = [];
@@ -2141,12 +2219,12 @@ MOBILE_WEBAPP_HTML = r"""<!DOCTYPE html>
                 const evs = schedMap[dStr] || [];
                 const badges = evs.slice(0, 2).map(e => {
                     const bColor = e.type === 'sched' ? '#0d6efd' : '#fd7e14';
-                    return `<div style="font-size:9px; background:${bColor}; color:#fff; border-radius:3px; padding:1px 2px; margin-top:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${e.label}</div>`;
+                    return `<div style="font-size: calc(9 * var(--u)); background:${bColor}; color:#fff; border-radius:3px; padding:1px 2px; margin-top:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${e.label}</div>`;
                 }).join('');
 
                 cells.push(`
                     <td onclick="selectCalDate('${dStr}')" style="padding:4px 2px; height:50px; vertical-align:top; background:${bg}; border:${border}; cursor:pointer;">
-                        <div style="font-size:12px; font-weight:800; color:${numColor};">${day}</div>
+                        <div style="font-size: calc(12 * var(--u)); font-weight:800; color:${numColor};">${day}</div>
                         ${badges}
                     </td>
                 `);
@@ -2168,20 +2246,20 @@ MOBILE_WEBAPP_HTML = r"""<!DOCTYPE html>
             let list = dbState.schedules || [];
             if (filterDong !== '전체') list = list.filter(s => s.dong === filterDong);
             if (list.length === 0) {
-                box.innerHTML = `<div style="font-size:13px; color:#64748b; padding:12px 0; text-align:center;">등록된 일정이 없습니다.</div>`;
+                box.innerHTML = `<div style="font-size: calc(13 * var(--u)); color:#64748b; padding:12px 0; text-align:center;">등록된 일정이 없습니다.</div>`;
                 return;
             }
             box.innerHTML = list.map(s => {
                 const gLink = makeGoogleCalLink(s.dong, s.room, s.title, s.event_date, s.description);
                 return `
-                <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; padding:10px 0; border-top:1px solid #f1f5f9; font-size:13px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; padding:10px 0; border-top:1px solid #f1f5f9; font-size: calc(13 * var(--u));">
                     <div style="flex:1;">
                         <div style="font-weight:800; color:#0f172a;">🗓️ [${s.event_date}] ${s.dong} ${s.room} - <span style="color:#0d6efd;">${s.title}</span></div>
-                        ${s.description ? `<div style="font-size:12px; color:#64748b; margin-top:2px;">메모: ${s.description}</div>` : ''}
+                        ${s.description ? `<div style="font-size: calc(12 * var(--u)); color:#64748b; margin-top:2px;">메모: ${s.description}</div>` : ''}
                     </div>
                     <div style="display:flex; gap:6px; align-items:center;">
-                        <a href="${gLink}" target="_blank" style="padding:5px 8px; background:#e8f5e9; color:#1b5e20; border:1px solid #a5d6a7; border-radius:6px; font-size:11px; font-weight:800; text-decoration:none;">구글캘린더 ↗</a>
-                        <button class="action-btn btn-mark-unpaid" style="padding:5px 8px; font-size:11px;" onclick="deleteSchedule(${s.id})">삭제</button>
+                        <a href="${gLink}" target="_blank" style="padding:5px 8px; background:#e8f5e9; color:#1b5e20; border:1px solid #a5d6a7; border-radius:6px; font-size: calc(11 * var(--u)); font-weight:800; text-decoration:none;">구글캘린더 ↗</a>
+                        <button class="action-btn btn-mark-unpaid" style="padding:5px 8px; font-size: calc(11 * var(--u));" onclick="deleteSchedule(${s.id})">삭제</button>
                     </div>
                 </div>`;
             }).join('');
@@ -2226,28 +2304,133 @@ MOBILE_WEBAPP_HTML = r"""<!DOCTYPE html>
             showToast('구글 캘린더가 연동되었습니다.');
         }
 
+        let activeTabName = localStorage.getItem('hoegi_active_tab_v2') || (INITIAL_BUNDLE.session_tab || 'pay');
+
+        function syncSessionQueryParams() {
+            try {
+                const yr = document.getElementById('selYear') ? document.getElementById('selYear').value : '2026';
+                const mo = document.getElementById('selMonth') ? document.getElementById('selMonth').value : '11';
+                localStorage.setItem('hoegi_sel_year_v2', String(yr));
+                localStorage.setItem('hoegi_sel_month_v2', String(mo));
+                if (window.parent && window.parent.history && window.parent.history.replaceState) {
+                    const url = new URL(window.parent.location.href);
+                    url.searchParams.set('fpct', String(currentFontPct));
+                    url.searchParams.set('tab', String(activeTabName));
+                    url.searchParams.set('yr', String(yr));
+                    url.searchParams.set('mo', String(mo));
+                    window.parent.history.replaceState({}, '', url.toString());
+                }
+            } catch (e) {}
+        }
+
+        function unlockPinchZoomAndHideWatermark() {
+            try {
+                const pDoc = window.parent && window.parent.document;
+                if (!pDoc) return;
+
+                // 1) 부모 창 viewport 메타태그 user-scalable=yes 강제 적용 (두 손가락 핀치 줌 잠금 해제)
+                let vp = pDoc.querySelector('meta[name="viewport"]');
+                if (!vp) {
+                    vp = pDoc.createElement('meta');
+                    vp.name = 'viewport';
+                    pDoc.head.appendChild(vp);
+                }
+                const targetVp = 'width=device-width, initial-scale=1.0, minimum-scale=0.5, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover';
+                if (vp.getAttribute('content') !== targetVp) {
+                    vp.setAttribute('content', targetVp);
+                }
+
+                // 2) 부모 창에 워터마크 제거 및 터치 줌 허용 스타일 주입
+                if (!pDoc.getElementById('hoegi-parent-fix-style')) {
+                    const st = pDoc.createElement('style');
+                    st.id = 'hoegi-parent-fix-style';
+                    st.textContent = `
+                        header[data-testid="stHeader"],
+                        [data-testid="stToolbar"],
+                        [data-testid="stDecoration"],
+                        [data-testid="stStatusWidget"],
+                        [data-testid="manage-app-button"],
+                        [data-testid="stAppDeployButton"],
+                        .viewerBadge_container__r5tak,
+                        .viewerBadge_link__qRIco,
+                        .styles_viewerBadge__CvC9N,
+                        .viewerBadge_container__1QSob,
+                        [class*="viewerBadge"],
+                        [class*="StatusWidget"],
+                        [class*="stAppDeployButton"],
+                        [class*="profileContainer"],
+                        a[href*="streamlit.io/cloud"],
+                        a[href*="streamlit.io"],
+                        #MainMenu,
+                        footer {
+                            display: none !important;
+                            visibility: hidden !important;
+                            opacity: 0 !important;
+                            pointer-events: none !important;
+                            width: 0 !important;
+                            height: 0 !important;
+                            position: fixed !important;
+                            bottom: -9999px !important;
+                            right: -9999px !important;
+                            z-index: -999999 !important;
+                        }
+                        html, body, [data-testid="stAppViewContainer"], [data-testid="stApp"] {
+                            touch-action: pan-x pan-y pinch-zoom !important;
+                        }
+                    `;
+                    pDoc.head.appendChild(st);
+                }
+
+                // 3) 동적으로 생성되는 우측 하단 워터마크/배지 요소 즉시 숨김
+                const badges = pDoc.querySelectorAll(
+                    '[class*="viewerBadge"], [data-testid="manage-app-button"], [data-testid="stStatusWidget"], [class*="StatusWidget"], a[href*="streamlit.io"], footer'
+                );
+                badges.forEach(el => {
+                    el.style.setProperty('display', 'none', 'important');
+                    el.style.setProperty('visibility', 'hidden', 'important');
+                    el.style.setProperty('opacity', '0', 'important');
+                    el.style.setProperty('pointer-events', 'none', 'important');
+                });
+            } catch (e) {}
+        }
+
         function switchTab(tab, btn) {
+            activeTabName = tab;
+            localStorage.setItem('hoegi_active_tab_v2', tab);
             ['pay', 'contracts', 'repairs', 'alerts', 'law', 'calendar'].forEach(id => {
                 const el = document.getElementById('tab-' + id);
                 if (el) el.style.display = (id === tab) ? 'block' : 'none';
             });
             document.querySelectorAll('.bottom-nav .nav-item').forEach(el => el.classList.remove('active'));
-            if (btn) btn.classList.add('active');
+            const targetBtn = btn || document.getElementById('nav-' + tab);
+            if (targetBtn) targetBtn.classList.add('active');
             if (tab === 'law') searchLaw();
+            // 하위 메뉴 전환 시에도 설정해둔 글씨 확대 비율 100% 그대로 유지 적용
+            applyFontScale(false);
+            syncSessionQueryParams();
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
         /* =========================================================
-           글씨 크기 조절 기능 (슬라이더 + [- 가-] [125%] [+ 가+] 완벽 연동)
+           글씨 크기 조절 기능 (전역 세션 상태 + 슬라이더 + [- 가-] [125%] [+ 가+] 완벽 연동)
            ========================================================= */
-        let currentFontPct = parseInt(localStorage.getItem('hoegi_font_pct_v2') || '125', 10);
+        let savedPct = localStorage.getItem('hoegi_font_pct_v2');
+        let currentFontPct = parseInt(savedPct !== null ? savedPct : String(INITIAL_BUNDLE.session_font_pct || 125), 10);
         if (isNaN(currentFontPct) || currentFontPct < 85 || currentFontPct > 175) {
             currentFontPct = 125;
         }
 
         function applyFontScale(showMsg = false) {
             const scale = currentFontPct / 100.0;
+            const unitPx = (scale / 1.25).toFixed(4) + 'px';
             document.documentElement.style.setProperty('--fs-scale', String(scale));
+            document.documentElement.style.setProperty('--u', unitPx);
+            try {
+                if (window.parent && window.parent.document) {
+                    window.parent.document.documentElement.style.setProperty('--fs-scale', String(scale));
+                    window.parent.document.documentElement.style.setProperty('--u', unitPx);
+                }
+            } catch (e) {}
             const badge = document.getElementById('fontScaleLabel');
             if (badge) badge.textContent = currentFontPct + '%';
             const slider = document.getElementById('fontSlider');
@@ -2255,7 +2438,7 @@ MOBILE_WEBAPP_HTML = r"""<!DOCTYPE html>
                 slider.value = String(currentFontPct);
             }
             if (showMsg) {
-                showToast(`🔍 글씨 크기: ${currentFontPct}%`);
+                showToast(`🔍 글씨 크기: ${currentFontPct}% (전 화면 적용)`);
             }
         }
 
@@ -2263,29 +2446,51 @@ MOBILE_WEBAPP_HTML = r"""<!DOCTYPE html>
             currentFontPct = Math.min(175, Math.max(85, parseInt(val, 10) || 125));
             localStorage.setItem('hoegi_font_pct_v2', String(currentFontPct));
             applyFontScale(true);
+            syncSessionQueryParams();
         }
 
         function changeFontSize(deltaPct) {
             currentFontPct = Math.min(175, Math.max(85, currentFontPct + deltaPct));
             localStorage.setItem('hoegi_font_pct_v2', String(currentFontPct));
             applyFontScale(true);
+            syncSessionQueryParams();
         }
 
         function resetFontSize() {
             currentFontPct = 125;
             localStorage.setItem('hoegi_font_pct_v2', String(currentFontPct));
             applyFontScale(true);
+            syncSessionQueryParams();
         }
 
         (function init() {
             loadState();
+            unlockPinchZoomAndHideWatermark();
+            setInterval(unlockPinchZoomAndHideWatermark, 1500);
             const todayStr = new Date().toISOString().split('T')[0];
-            document.getElementById('selYear').value = '2026';
-            document.getElementById('selMonth').value = '11';
+            const initYear = localStorage.getItem('hoegi_sel_year_v2') || String(INITIAL_BUNDLE.session_year || 2026);
+            const initMonth = localStorage.getItem('hoegi_sel_month_v2') || String(INITIAL_BUNDLE.session_month || 11);
+            const yrEl = document.getElementById('selYear');
+            const moEl = document.getElementById('selMonth');
+            if (yrEl && Array.from(yrEl.options).some(o => o.value === initYear)) {
+                yrEl.value = initYear;
+                calYear = Number(initYear);
+            } else if (yrEl) {
+                yrEl.value = '2026';
+            }
+            if (moEl && Array.from(moEl.options).some(o => o.value === initMonth)) {
+                moEl.value = initMonth;
+                calMonth = Number(initMonth);
+            } else if (moEl) {
+                moEl.value = '11';
+            }
             if (document.getElementById('scDate')) document.getElementById('scDate').value = todayStr;
             if (document.getElementById('repDate')) document.getElementById('repDate').value = todayStr;
             applyFontScale(false);
             renderAllViews();
+            if (activeTabName && activeTabName !== 'pay') {
+                switchTab(activeTabName, document.getElementById('nav-' + activeTabName));
+            }
         })();
     </script>
 </body>
