@@ -845,6 +845,279 @@ MOBILE_WEBAPP_HTML = r"""<!DOCTYPE html>
         #lawModalBody h3, #lawModalBody h4, #lawModalBody b {
             font-size: calc(14.5 * var(--u)) !important;
         }
+
+        /* =========================================================
+           6. PC 데스크탑 전용 반응형 레이아웃 (@media min-width: 900px)
+           좁은 스마트폰(<900px)에서는 모바일 전용 UI(상단 블루헤더 + 하단 고정 메뉴바),
+           넓은 PC 모니터(>=900px)에서는 좌측 고정 사이드바 + 우측 와이드 화면으로 자동 전환
+           ========================================================= */
+        .pc-sidebar {
+            display: none;
+        }
+        .pc-top-header {
+            display: none;
+        }
+        .pc-overview-table-wrap {
+            display: none;
+        }
+
+        @media screen and (min-width: 900px) {
+            body {
+                padding-bottom: 0 !important;
+                background: #f1f5f9;
+            }
+            /* 모바일 전용 상단 블루 헤더 및 하단 고정 메뉴바 숨김 */
+            .app-header {
+                display: none !important;
+            }
+            .bottom-nav {
+                display: none !important;
+            }
+
+            /* 전체 화면을 좌측 사이드바 + 우측 메인 영역 2단 레이아웃으로 배치 */
+            .app-shell {
+                display: flex;
+                flex-direction: row;
+                align-items: stretch;
+                min-height: 100dvh;
+                width: 100%;
+            }
+
+            /* 좌측 PC 전용 사이드바 (기존 데스크탑 앱 스타일) */
+            .pc-sidebar {
+                display: flex;
+                flex-direction: column;
+                width: 300px;
+                min-width: 300px;
+                background: #ffffff;
+                border-right: 1px solid #cbd5e1;
+                padding: 22px 18px;
+                position: sticky;
+                top: 0;
+                height: 100dvh;
+                overflow-y: auto;
+                box-shadow: 2px 0 12px rgba(15, 23, 42, 0.04);
+                z-index: 150;
+            }
+            .pc-brand {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                padding-bottom: 16px;
+                border-bottom: 2px solid #0d6efd;
+                margin-bottom: 16px;
+            }
+            .pc-brand img {
+                width: 48px;
+                height: 48px;
+                border-radius: 12px;
+                object-fit: cover;
+                box-shadow: 0 2px 8px rgba(13, 110, 253, 0.25);
+            }
+            .pc-brand-title {
+                font-size: calc(18 * var(--u));
+                font-weight: 900;
+                color: #0f172a;
+                line-height: 1.2;
+            }
+            .pc-brand-sub {
+                font-size: calc(12 * var(--u));
+                color: #64748b;
+                font-weight: 700;
+                margin-top: 3px;
+            }
+            .pc-side-section {
+                margin-bottom: 18px;
+                padding-bottom: 16px;
+                border-bottom: 1px solid #e2e8f0;
+            }
+            .pc-side-title {
+                font-size: calc(13.5 * var(--u));
+                font-weight: 900;
+                color: #1e293b;
+                margin-bottom: 10px;
+                display: flex;
+                align-items: center;
+                gap: 6px;
+            }
+            .pc-ym-row {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 8px;
+            }
+            .pc-ym-row select {
+                width: 100%;
+                padding: 9px 10px;
+                border-radius: 8px;
+                border: 1.5px solid #cbd5e1;
+                background: #f8fafc;
+                font-size: calc(14 * var(--u));
+                font-weight: 800;
+                color: #0f172a;
+                cursor: pointer;
+            }
+            .pc-nav-list {
+                display: flex;
+                flex-direction: column;
+                gap: 6px;
+            }
+            .pc-nav-btn {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                width: 100%;
+                text-align: left;
+                padding: 11px 14px;
+                border-radius: 10px;
+                border: 1px solid transparent;
+                background: #f8fafc;
+                color: #334155;
+                font-size: calc(14 * var(--u));
+                font-weight: 800;
+                cursor: pointer;
+                transition: all 0.15s ease;
+            }
+            .pc-nav-btn:hover {
+                background: #eff6ff;
+                color: #0d6efd;
+                border-color: #bfdbfe;
+            }
+            .pc-nav-btn.active {
+                background: #0d6efd;
+                color: #ffffff;
+                box-shadow: 0 3px 8px rgba(13, 110, 253, 0.25);
+            }
+            .pc-qr-box {
+                background: #f8fafc;
+                border: 1.5px solid #0d6efd;
+                border-radius: 12px;
+                padding: 12px;
+                text-align: center;
+            }
+
+            /* 우측 PC 메인 컨텐츠 컨테이너 와이드 확장 */
+            .container {
+                flex: 1;
+                max-width: 1460px !important;
+                padding: 26px 34px 48px 34px !important;
+                margin: 0 auto !important;
+                min-width: 0;
+            }
+
+            /* PC 상단 타이틀 및 가로형 탭 메뉴 바 */
+            .pc-top-header {
+                display: block;
+                background: #ffffff;
+                border-radius: 16px;
+                padding: 20px 24px;
+                margin-bottom: 20px;
+                box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05);
+                border: 1px solid #e2e8f0;
+            }
+            .pc-top-title-row {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                flex-wrap: wrap;
+                gap: 12px;
+                margin-bottom: 16px;
+            }
+            .pc-main-h1 {
+                font-size: calc(24 * var(--u));
+                font-weight: 900;
+                color: #0f172a;
+                margin: 0;
+                letter-spacing: -0.5px;
+            }
+            .pc-main-sub {
+                font-size: calc(14 * var(--u));
+                color: #64748b;
+                margin-top: 4px;
+                font-weight: 600;
+            }
+            .pc-top-tabs {
+                display: grid;
+                grid-template-columns: repeat(6, 1fr);
+                gap: 10px;
+                padding-top: 14px;
+                border-top: 2px solid #eff6ff;
+            }
+            .pc-top-tab-btn {
+                padding: 11px 10px;
+                border-radius: 10px;
+                border: 1px solid #cbd5e1;
+                background: #f8fafc;
+                color: #1e293b;
+                font-size: calc(14 * var(--u));
+                font-weight: 800;
+                cursor: pointer;
+                text-align: center;
+                white-space: nowrap;
+                transition: all 0.15s ease;
+            }
+            .pc-top-tab-btn:hover {
+                background: #eff6ff;
+                border-color: #93c5fd;
+                color: #0d6efd;
+            }
+            .pc-top-tab-btn.active {
+                background: #0d6efd;
+                color: #ffffff;
+                border-color: #0d6efd;
+                box-shadow: 0 2px 6px rgba(13, 110, 253, 0.25);
+            }
+
+            /* PC에서는 요약 카드를 2x2가 아닌 1줄 4열(4x1) 와이드 카드로 배치 */
+            .kpi-grid {
+                grid-template-columns: repeat(4, 1fr) !important;
+                gap: 16px !important;
+                margin-bottom: 20px !important;
+            }
+            .kpi-box {
+                padding: 18px 20px !important;
+                border-radius: 16px !important;
+            }
+
+            /* PC에서는 동별 요약 표를 여유롭고 넓게 표시 */
+            .subtotal-card {
+                padding: 18px 22px !important;
+                margin-bottom: 20px !important;
+            }
+            .subtotal-header {
+                font-size: calc(17 * var(--u)) !important;
+                margin-bottom: 12px !important;
+            }
+            .subtotal-table th {
+                padding: 11px 8px !important;
+                font-size: calc(13.5 * var(--u)) !important;
+                background: #0d6efd !important;
+                color: #ffffff !important;
+            }
+            .subtotal-table td {
+                padding: 12px 8px !important;
+                font-size: calc(14 * var(--u)) !important;
+            }
+            .subtotal-table .sub-caption {
+                font-size: calc(11.5 * var(--u)) !important;
+            }
+
+            /* PC에서 호실 카드 목록을 2열 와이드 그리드로 시원하게 배치 */
+            #paymentList, #contractList, #alertList {
+                display: grid;
+                grid-template-columns: repeat(2, 1fr);
+                gap: 14px;
+            }
+            #paymentList .room-card, #contractList .room-card, #alertList .room-card {
+                margin-bottom: 0 !important;
+            }
+
+            /* PC 전용 A동·B동 종합 일람표 표시 */
+            .pc-overview-table-wrap {
+                display: block;
+                margin-top: 22px;
+            }
+        }
+
     </style>
 </head>
 <body>
@@ -909,7 +1182,113 @@ MOBILE_WEBAPP_HTML = r"""<!DOCTYPE html>
         </div>
     </header>
 
-    <main class="container">
+    <div class="app-shell">
+        <!-- PC 데스크탑 전용 좌측 고정 사이드바 (화면 폭 900px 이상에서 자동 표시) -->
+        <aside class="pc-sidebar">
+            <div class="pc-brand">
+                <img src="__ICON_DATA_URI__" alt="회기동 건물 아이콘" />
+                <div>
+                    <div class="pc-brand-title">회기동 관리시스템</div>
+                    <div class="pc-brand-sub">A동 20세대 · B동 19세대 (39세대)</div>
+                </div>
+            </div>
+
+            <div class="pc-side-section">
+                <div class="pc-side-title">📅 조회 연도 · 월 선택</div>
+                <div class="pc-ym-row">
+                    <select id="pcSelYear" onchange="onPcYearMonthChange()">
+                        <option value="2020">2020년</option>
+                        <option value="2021">2021년</option>
+                        <option value="2022">2022년</option>
+                        <option value="2023">2023년</option>
+                        <option value="2024">2024년</option>
+                        <option value="2025">2025년</option>
+                        <option value="2026" selected>2026년</option>
+                        <option value="2027">2027년</option>
+                        <option value="2028">2028년</option>
+                        <option value="2029">2029년</option>
+                        <option value="2030">2030년</option>
+                        <option value="2031">2031년</option>
+                        <option value="2032">2032년</option>
+                        <option value="2033">2033년</option>
+                        <option value="2034">2034년</option>
+                        <option value="2035">2035년</option>
+                    </select>
+                    <select id="pcSelMonth" onchange="onPcYearMonthChange()">
+                        <option value="1">1월</option>
+                        <option value="2">2월</option>
+                        <option value="3">3월</option>
+                        <option value="4">4월</option>
+                        <option value="5">5월</option>
+                        <option value="6">6월</option>
+                        <option value="7">7월</option>
+                        <option value="8">8월</option>
+                        <option value="9">9월</option>
+                        <option value="10">10월</option>
+                        <option value="11" selected>11월</option>
+                        <option value="12">12월</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="pc-side-section">
+                <div class="pc-side-title">📂 메뉴 바로가기</div>
+                <div class="pc-nav-list">
+                    <button id="pc-nav-pay" class="pc-nav-btn active" onclick="switchTab('pay')">💰 수납현황 및 종합 요약</button>
+                    <button id="pc-nav-contracts" class="pc-nav-btn" onclick="switchTab('contracts')">📋 39세대 계약 관리 대장</button>
+                    <button id="pc-nav-repairs" class="pc-nav-btn" onclick="switchTab('repairs')">🛠️ 보수공사 · 지출 결산</button>
+                    <button id="pc-nav-alerts" class="pc-nav-btn" onclick="switchTab('alerts')">🚨 당월 미납경보 · 문자</button>
+                    <button id="pc-nav-law" class="pc-nav-btn" onclick="switchTab('law')">⚖️ 실시간 법령 · 판례 검색</button>
+                    <button id="pc-nav-calendar" class="pc-nav-btn" onclick="switchTab('calendar')">📅 실시간 구글 일정관리</button>
+                </div>
+            </div>
+
+            <div class="pc-side-section">
+                <div class="pc-side-title">🔍 화면 글씨 크기 조절</div>
+                <input type="range" id="pcFontSlider" min="85" max="175" step="5" value="125" oninput="onFontSliderChange(this.value)" style="width:100%; accent-color:#0d6efd; cursor:pointer; margin-bottom:8px;" />
+                <div style="display:flex; justify-content:space-between; align-items:center; gap:6px;">
+                    <button type="button" class="action-btn btn-mark-unpaid" style="flex:1; padding:6px 0;" onclick="changeFontSize(-5)">➖ 가-</button>
+                    <span id="pcFontScaleLabel" onclick="resetFontSize()" style="font-weight:900; color:#0d6efd; cursor:pointer; padding:4px 10px; background:#eff6ff; border-radius:8px; font-size:calc(13 * var(--u));" title="클릭 시 125% 기본 복원">125%</span>
+                    <button type="button" class="action-btn btn-mark-unpaid" style="flex:1; padding:6px 0;" onclick="changeFontSize(5)">➕ 가+</button>
+                </div>
+            </div>
+
+            <div class="pc-side-section">
+                <div class="pc-side-title">⚡ 빠른 작업</div>
+                <button class="action-btn btn-mark-paid" style="width:100%; margin-bottom:8px; padding:10px;" onclick="openContractModal()">➕ 신규 계약 등록</button>
+                <button class="action-btn btn-mark-unpaid" style="width:100%; padding:9px;" onclick="window.print()">🖨️ 현재 화면 인쇄 (Ctrl+P)</button>
+            </div>
+
+            <div class="pc-qr-box">
+                <div style="font-size:calc(12.5 * var(--u)); font-weight:900; color:#0d6efd; margin-bottom:4px;">📱 스마트폰 전용 웹앱 QR</div>
+                <div style="font-size:calc(11 * var(--u)); color:#64748b; margin-bottom:6px;">스마트폰 카메라로 스캔하면 모바일 전용 UI로 바로 열립니다</div>
+                <img src="https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=https%3A%2F%2Ftwlxfvbliagbpo96tnpvri.streamlit.app%2F" width="120" height="120" style="border-radius:8px; border:1px solid #e2e8f0; background:#fff; padding:4px;" />
+            </div>
+        </aside>
+
+        <main class="container">
+            <!-- PC 데스크탑 전용 상단 와이드 헤더 & 탭 바 -->
+            <div class="pc-top-header">
+                <div class="pc-top-title-row">
+                    <div>
+                        <h1 class="pc-main-h1">🏡 회기동 다가구 임대관리 시스템</h1>
+                        <div class="pc-main-sub">A동 20세대 + B동 19세대 (총 39세대) 계약 정보 및 월세/관리비 수납 · 보수지출 · 법령 · 구글일정 통합 관리</div>
+                    </div>
+                    <div style="display:flex; gap:8px; align-items:center;">
+                        <span id="pcCurrentYmBadge" style="background:#eff6ff; color:#0d6efd; border:1px solid #bfdbfe; padding:8px 14px; border-radius:10px; font-weight:900; font-size:calc(14 * var(--u));">📅 2026년 11월 기준</span>
+                        <button class="action-btn btn-mark-paid" onclick="openContractModal()">+ 신규 계약 등록</button>
+                    </div>
+                </div>
+                <div class="pc-top-tabs">
+                    <button id="pc-top-pay" class="pc-top-tab-btn active" onclick="switchTab('pay')">💰 수납현황 종합</button>
+                    <button id="pc-top-contracts" class="pc-top-tab-btn" onclick="switchTab('contracts')">📋 계약 관리 대장</button>
+                    <button id="pc-top-repairs" class="pc-top-tab-btn" onclick="switchTab('repairs')">🛠️ 보수공사 · 지출내역</button>
+                    <button id="pc-top-alerts" class="pc-top-tab-btn" onclick="switchTab('alerts')">🚨 미납경보 · 문자</button>
+                    <button id="pc-top-law" class="pc-top-tab-btn" onclick="switchTab('law')">⚖️ 법령 · 판례 검색</button>
+                    <button id="pc-top-calendar" class="pc-top-tab-btn" onclick="switchTab('calendar')">📅 실시간 구글 일정</button>
+                </div>
+            </div>
+
         <!-- TAB 1: 💰 수납현황 -->
         <section id="tab-pay">
             <!-- 3. 2x2 요약 카드 -->
@@ -926,6 +1305,7 @@ MOBILE_WEBAPP_HTML = r"""<!DOCTYPE html>
             </div>
             <input type="text" id="paySearch" class="search-input" placeholder="🔍 호수 또는 세입자 이름 검색 (예: 201, 윤다미)" oninput="renderPayments()" />
             <div id="paymentList"></div>
+            <div id="pcOverviewTable" class="pc-overview-table-wrap"></div>
         </section>
 
         <!-- TAB 2: 📋 계약대장 -->
@@ -1176,7 +1556,8 @@ MOBILE_WEBAPP_HTML = r"""<!DOCTYPE html>
                 </div>
             </div>
         </section>
-    </main>
+        </main>
+    </div>
 
     <!-- 계약 등록/수정 모달 -->
     <div id="contractModal" class="modal-backdrop">
@@ -1417,9 +1798,36 @@ MOBILE_WEBAPP_HTML = r"""<!DOCTYPE html>
             };
         }
 
+        function syncYearMonthControls(year, month) {
+            const mYear = document.getElementById('selYear');
+            const mMonth = document.getElementById('selMonth');
+            const pYear = document.getElementById('pcSelYear');
+            const pMonth = document.getElementById('pcSelMonth');
+            const badge = document.getElementById('pcCurrentYmBadge');
+            if (mYear) mYear.value = String(year);
+            if (mMonth) mMonth.value = String(month);
+            if (pYear) pYear.value = String(year);
+            if (pMonth) pMonth.value = String(month);
+            if (badge) badge.textContent = `📅 ${year}년 ${month}월 기준`;
+        }
+
         function onYearMonthChange() {
-            calYear = Number(document.getElementById('selYear').value || 2026);
-            calMonth = Number(document.getElementById('selMonth').value || 11);
+            const y = Number(document.getElementById('selYear').value || 2026);
+            const m = Number(document.getElementById('selMonth').value || 11);
+            calYear = y;
+            calMonth = m;
+            syncYearMonthControls(y, m);
+            renderAllViews();
+            applyFontScale(false);
+            syncSessionQueryParams();
+        }
+
+        function onPcYearMonthChange() {
+            const y = Number(document.getElementById('pcSelYear').value || 2026);
+            const m = Number(document.getElementById('pcSelMonth').value || 11);
+            calYear = y;
+            calMonth = m;
+            syncYearMonthControls(y, m);
             renderAllViews();
             applyFontScale(false);
             syncSessionQueryParams();
@@ -1594,6 +2002,51 @@ MOBILE_WEBAPP_HTML = r"""<!DOCTYPE html>
                     </div>
                 </div>`;
             }).join('');
+
+            const pcTbl = document.getElementById('pcOverviewTable');
+            if (pcTbl) {
+                const renderDongTable = (dongTitle, subset) => `
+                    <div class="subtotal-card" style="margin-bottom:0;">
+                        <div class="subtotal-header">${dongTitle} 상세 수납 대장</div>
+                        <table class="subtotal-table">
+                            <thead>
+                                <tr>
+                                    <th>호수</th>
+                                    <th>임차인</th>
+                                    <th>구분</th>
+                                    <th>보증금</th>
+                                    <th>월세</th>
+                                    <th>관리비</th>
+                                    <th>청구합계</th>
+                                    <th>수납상태</th>
+                                    <th>빠른처리</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${subset.map(x => {
+                                    const isPaid = x.status === 'Paid';
+                                    const nextSt = isPaid ? 'Unpaid' : 'Paid';
+                                    return `
+                                    <tr>
+                                        <td><b>${x.room}호</b></td>
+                                        <td><b>${x.tenant_name}</b></td>
+                                        <td>${(x.rent || 0) === 0 ? '<span style="color:#0d6efd;font-weight:800;">전세</span>' : '<span style="color:#fd7e14;font-weight:800;">월세</span>'}</td>
+                                        <td>${fmtMan(x.deposit)}</td>
+                                        <td>${fmtMan(x.rent)}</td>
+                                        <td>${fmtMan(x.maintenance_fee)}</td>
+                                        <td><b>${fmtWon(x.total_bill)}</b></td>
+                                        <td>${isPaid ? '<span style="color:#198754;font-weight:800;">🟢 완납</span>' : '<span style="color:#dc3545;font-weight:800;">🔴 미납</span>'}</td>
+                                        <td><button onclick="togglePay(${x.contract_id}, '${nextSt}', '${x.dong} ${x.room}호')" style="border:none; border-radius:6px; padding:4px 8px; cursor:pointer; font-weight:800; font-size:calc(11 * var(--u)); background:${isPaid ? '#e2e8f0' : '#0d6efd'}; color:${isPaid ? '#334155' : '#fff'};">${isPaid ? '미납전환' : '완납확인'}</button></td>
+                                    </tr>`;
+                                }).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+                const aSub = rows.filter(x => x.dong === 'A동');
+                const bSub = rows.filter(x => x.dong === 'B동');
+                pcTbl.innerHTML = `<div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">${renderDongTable('🏠 A동 (20세대)', aSub)}${renderDongTable('🏢 B동 (19세대)', bSub)}</div>`;
+            }
         }
 
         function togglePay(contractId, status, label) {
@@ -2402,8 +2855,17 @@ MOBILE_WEBAPP_HTML = r"""<!DOCTYPE html>
                 if (el) el.style.display = (id === tab) ? 'block' : 'none';
             });
             document.querySelectorAll('.bottom-nav .nav-item').forEach(el => el.classList.remove('active'));
-            const targetBtn = btn || document.getElementById('nav-' + tab);
-            if (targetBtn) targetBtn.classList.add('active');
+            const targetMobileBtn = document.getElementById('nav-' + tab);
+            if (targetMobileBtn) targetMobileBtn.classList.add('active');
+
+            document.querySelectorAll('.pc-nav-btn').forEach(el => el.classList.remove('active'));
+            const targetPcSideBtn = document.getElementById('pc-nav-' + tab);
+            if (targetPcSideBtn) targetPcSideBtn.classList.add('active');
+
+            document.querySelectorAll('.pc-top-tab-btn').forEach(el => el.classList.remove('active'));
+            const targetPcTopBtn = document.getElementById('pc-top-' + tab);
+            if (targetPcTopBtn) targetPcTopBtn.classList.add('active');
+
             if (tab === 'law') searchLaw();
             // 하위 메뉴 전환 시에도 설정해둔 글씨 확대 비율 100% 그대로 유지 적용
             applyFontScale(false);
@@ -2433,9 +2895,15 @@ MOBILE_WEBAPP_HTML = r"""<!DOCTYPE html>
             } catch (e) {}
             const badge = document.getElementById('fontScaleLabel');
             if (badge) badge.textContent = currentFontPct + '%';
+            const pcBadge = document.getElementById('pcFontScaleLabel');
+            if (pcBadge) pcBadge.textContent = currentFontPct + '%';
             const slider = document.getElementById('fontSlider');
             if (slider && Number(slider.value) !== currentFontPct) {
                 slider.value = String(currentFontPct);
+            }
+            const pcSlider = document.getElementById('pcFontSlider');
+            if (pcSlider && Number(pcSlider.value) !== currentFontPct) {
+                pcSlider.value = String(currentFontPct);
             }
             if (showMsg) {
                 showToast(`🔍 글씨 크기: ${currentFontPct}% (전 화면 적용)`);
@@ -2484,6 +2952,7 @@ MOBILE_WEBAPP_HTML = r"""<!DOCTYPE html>
             } else if (moEl) {
                 moEl.value = '11';
             }
+            syncYearMonthControls(calYear, calMonth);
             if (document.getElementById('scDate')) document.getElementById('scDate').value = todayStr;
             if (document.getElementById('repDate')) document.getElementById('repDate').value = todayStr;
             applyFontScale(false);
