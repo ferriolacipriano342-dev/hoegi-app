@@ -1264,8 +1264,45 @@ MOBILE_WEBAPP_HTML = r"""<!DOCTYPE html>
                         <h1 class="pc-main-h1">🏡 회기동 다가구 임대관리 시스템</h1>
                         <div class="pc-main-sub">A동 20세대 + B동 19세대 (총 39세대) 계약 정보 및 월세/관리비 수납 · 보수지출 · 법령 · 구글일정 통합 관리</div>
                     </div>
-                    <div style="display:flex; gap:8px; align-items:center;">
-                        <span id="pcCurrentYmBadge" style="background:#eff6ff; color:#0d6efd; border:1px solid #bfdbfe; padding:8px 14px; border-radius:10px; font-weight:900; font-size:calc(14 * var(--u));">📅 2026년 11월 기준</span>
+                    <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                        <div style="display:flex; align-items:center; gap:5px; background:#eff6ff; border:1.5px solid #93c5fd; padding:5px 10px; border-radius:10px;">
+                            <button type="button" onclick="moveGlobalMonth(-1)" title="이전 달" style="border:none; background:#dbeafe; color:#0d6efd; border-radius:6px; padding:4px 8px; font-weight:900; cursor:pointer; font-size:calc(12 * var(--u));">◀</button>
+                            <span style="font-size:calc(14 * var(--u));">📅</span>
+                            <select id="pcTopSelYear" onchange="onPcTopYearMonthChange()" style="border:1px solid #bfdbfe; background:#ffffff; color:#0d6efd; font-weight:900; font-size:calc(14 * var(--u)); padding:5px 8px; border-radius:7px; cursor:pointer; outline:none;">
+                                <option value="2020">2020년</option>
+                                <option value="2021">2021년</option>
+                                <option value="2022">2022년</option>
+                                <option value="2023">2023년</option>
+                                <option value="2024">2024년</option>
+                                <option value="2025">2025년</option>
+                                <option value="2026" selected>2026년</option>
+                                <option value="2027">2027년</option>
+                                <option value="2028">2028년</option>
+                                <option value="2029">2029년</option>
+                                <option value="2030">2030년</option>
+                                <option value="2031">2031년</option>
+                                <option value="2032">2032년</option>
+                                <option value="2033">2033년</option>
+                                <option value="2034">2034년</option>
+                                <option value="2035">2035년</option>
+                            </select>
+                            <select id="pcTopSelMonth" onchange="onPcTopYearMonthChange()" style="border:1px solid #bfdbfe; background:#ffffff; color:#0d6efd; font-weight:900; font-size:calc(14 * var(--u)); padding:5px 8px; border-radius:7px; cursor:pointer; outline:none;">
+                                <option value="1">1월</option>
+                                <option value="2">2월</option>
+                                <option value="3">3월</option>
+                                <option value="4">4월</option>
+                                <option value="5">5월</option>
+                                <option value="6">6월</option>
+                                <option value="7">7월</option>
+                                <option value="8">8월</option>
+                                <option value="9">9월</option>
+                                <option value="10">10월</option>
+                                <option value="11" selected>11월</option>
+                                <option value="12">12월</option>
+                            </select>
+                            <span style="color:#0d6efd; font-weight:800; font-size:calc(13 * var(--u)); margin:0 2px;">기준</span>
+                            <button type="button" onclick="moveGlobalMonth(1)" title="다음 달" style="border:none; background:#dbeafe; color:#0d6efd; border-radius:6px; padding:4px 8px; font-weight:900; cursor:pointer; font-size:calc(12 * var(--u));">▶</button>
+                        </div>
                         <button class="action-btn btn-mark-paid" onclick="openContractModal()">+ 신규 계약 등록</button>
                     </div>
                 </div>
@@ -1337,7 +1374,7 @@ MOBILE_WEBAPP_HTML = r"""<!DOCTYPE html>
                 <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:8px;">
                     <div>
                         <label style="font-size: calc(11 * var(--u)); font-weight:700; color:#475569; display:block; margin-bottom:3px;">보수 일자</label>
-                        <input type="date" id="repDate" style="width:100%; padding:8px; border-radius:8px; border:1px solid #cbd5e1; font-size: calc(14 * var(--u)); font-weight:700;" />
+                        <input type="date" id="repDate" onchange="onDateInputSync(this.value)" style="width:100%; padding:8px; border-radius:8px; border:1px solid #cbd5e1; font-size: calc(14 * var(--u)); font-weight:700;" />
                     </div>
                     <div>
                         <label style="font-size: calc(11 * var(--u)); font-weight:700; color:#475569; display:block; margin-bottom:3px;">공사 분류</label>
@@ -1488,7 +1525,7 @@ MOBILE_WEBAPP_HTML = r"""<!DOCTYPE html>
                     </div>
                     <div>
                         <label style="font-size: calc(11 * var(--u)); font-weight:700; color:#475569; display:block; margin-bottom:3px;">일정 / 보수 날짜</label>
-                        <input type="date" id="scDate" style="width:100%; padding:8px; border-radius:8px; border:1px solid #cbd5e1; font-size: calc(14 * var(--u)); font-weight:700;" />
+                        <input type="date" id="scDate" onchange="onDateInputSync(this.value)" style="width:100%; padding:8px; border-radius:8px; border:1px solid #cbd5e1; font-size: calc(14 * var(--u)); font-weight:700;" />
                     </div>
                 </div>
                 <div style="display:grid; grid-template-columns:1.2fr 1fr; gap:8px; margin-bottom:8px;">
@@ -1788,39 +1825,86 @@ MOBILE_WEBAPP_HTML = r"""<!DOCTYPE html>
             };
         }
 
-        function syncYearMonthControls(year, month) {
+        function syncYearMonthControls(year, month, keepExactDay = null) {
             const mYear = document.getElementById('selYear');
             const mMonth = document.getElementById('selMonth');
             const pYear = document.getElementById('pcSelYear');
             const pMonth = document.getElementById('pcSelMonth');
-            const badge = document.getElementById('pcCurrentYmBadge');
+            const ptYear = document.getElementById('pcTopSelYear');
+            const ptMonth = document.getElementById('pcTopSelMonth');
             if (mYear) mYear.value = String(year);
             if (mMonth) mMonth.value = String(month);
             if (pYear) pYear.value = String(year);
             if (pMonth) pMonth.value = String(month);
-            if (badge) badge.textContent = `📅 ${year}년 ${month}월 기준`;
+            if (ptYear) ptYear.value = String(year);
+            if (ptMonth) ptMonth.value = String(month);
+
+            // 일정/보수 날짜 입력창(#scDate, #repDate)도 선택된 연·월과 함께 연동
+            const ymPrefix = `${year}-${String(month).padStart(2, '0')}`;
+            const lastDay = new Date(Number(year), Number(month), 0).getDate();
+            ['scDate', 'repDate'].forEach(id => {
+                const el = document.getElementById(id);
+                if (!el) return;
+                let dayNum = keepExactDay;
+                if (!dayNum) {
+                    const parts = String(el.value || '').split('-');
+                    dayNum = parts.length === 3 ? parseInt(parts[2], 10) : 1;
+                }
+                if (isNaN(dayNum) || dayNum < 1) dayNum = 1;
+                if (dayNum > lastDay) dayNum = lastDay;
+                el.value = `${ymPrefix}-${String(dayNum).padStart(2, '0')}`;
+            });
+        }
+
+        function applyGlobalYearMonth(y, m, exactDay = null) {
+            calYear = Number(y || 2026);
+            calMonth = Number(m || 11);
+            syncYearMonthControls(calYear, calMonth, exactDay);
+            renderAllViews();
+            applyFontScale(false);
+            syncSessionQueryParams();
         }
 
         function onYearMonthChange() {
             const y = Number(document.getElementById('selYear').value || 2026);
             const m = Number(document.getElementById('selMonth').value || 11);
-            calYear = y;
-            calMonth = m;
-            syncYearMonthControls(y, m);
-            renderAllViews();
-            applyFontScale(false);
-            syncSessionQueryParams();
+            applyGlobalYearMonth(y, m);
         }
 
         function onPcYearMonthChange() {
             const y = Number(document.getElementById('pcSelYear').value || 2026);
             const m = Number(document.getElementById('pcSelMonth').value || 11);
-            calYear = y;
-            calMonth = m;
-            syncYearMonthControls(y, m);
-            renderAllViews();
-            applyFontScale(false);
-            syncSessionQueryParams();
+            applyGlobalYearMonth(y, m);
+        }
+
+        function onPcTopYearMonthChange() {
+            const y = Number(document.getElementById('pcTopSelYear').value || 2026);
+            const m = Number(document.getElementById('pcTopSelMonth').value || 11);
+            applyGlobalYearMonth(y, m);
+        }
+
+        function moveGlobalMonth(delta) {
+            let y = Number(document.getElementById('selYear').value || 2026);
+            let m = Number(document.getElementById('selMonth').value || 11) + delta;
+            if (m < 1) { m = 12; y -= 1; }
+            if (m > 12) { m = 1; y += 1; }
+            if (y < 2020) y = 2020;
+            if (y > 2035) y = 2035;
+            applyGlobalYearMonth(y, m);
+            showToast(`📅 ${y}년 ${m}월로 이동했습니다.`);
+        }
+
+        function onDateInputSync(dateVal) {
+            if (!dateVal) return;
+            const parts = String(dateVal).split('-');
+            if (parts.length === 3) {
+                const y = parseInt(parts[0], 10);
+                const m = parseInt(parts[1], 10);
+                const d = parseInt(parts[2], 10);
+                if (!isNaN(y) && !isNaN(m)) {
+                    applyGlobalYearMonth(y, m, d);
+                }
+            }
         }
 
         function renderAllViews() {
@@ -2604,18 +2688,15 @@ MOBILE_WEBAPP_HTML = r"""<!DOCTYPE html>
         }
 
         function moveCalMonth(delta) {
-            calMonth += delta;
-            if (calMonth < 1) { calMonth = 12; calYear -= 1; }
-            if (calMonth > 12) { calMonth = 1; calYear += 1; }
-            renderInteractiveCalendar();
+            moveGlobalMonth(delta);
         }
 
         function selectCalDate(dateStr) {
-            const el = document.getElementById('scDate');
-            if (el) {
-                el.value = dateStr;
-                showToast(`📅 ${dateStr} 날짜가 선택되었습니다.`);
-            }
+            ['scDate', 'repDate'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.value = dateStr;
+            });
+            showToast(`📅 ${dateStr} 날짜가 선택되었습니다.`);
             renderInteractiveCalendar();
         }
 
@@ -2855,9 +2936,9 @@ MOBILE_WEBAPP_HTML = r"""<!DOCTYPE html>
             } else if (moEl) {
                 moEl.value = '11';
             }
-            syncYearMonthControls(calYear, calMonth);
             if (document.getElementById('scDate')) document.getElementById('scDate').value = todayStr;
             if (document.getElementById('repDate')) document.getElementById('repDate').value = todayStr;
+            syncYearMonthControls(calYear, calMonth);
             applyFontScale(false);
             renderAllViews();
             if (activeTabName && activeTabName !== 'pay') {
