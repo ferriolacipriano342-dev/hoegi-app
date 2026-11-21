@@ -21,24 +21,16 @@ st.set_page_config(
 )
 
 # ==============================================================================
-# [강제 주입 1] 최상단 워터마크 강제 삭제 (CSS Injection)
-# ==============================================================================
-st.markdown(
-    '<style>#MainMenu {visibility: hidden;} footer {visibility: hidden;} header {visibility: hidden;} .stDeployButton {display:none;}</style>',
-    unsafe_allow_html=True,
-)
-
-# ==============================================================================
 # 0-1. 전역 세션 상태(Session State) 초기화 (글씨 확대 비율, 현재 탭, 선택 연/월 유지)
 # ==============================================================================
 if "font_scale_pct" not in st.session_state:
-    st.session_state["font_scale_pct"] = int(st.query_params.get("fpct", 125))
+    st.session_state["font_scale_pct"] = 125
 if "active_tab" not in st.session_state:
-    st.session_state["active_tab"] = st.query_params.get("tab", "pay")
+    st.session_state["active_tab"] = "pay"
 if "sel_year" not in st.session_state:
-    st.session_state["sel_year"] = int(st.query_params.get("yr", 2026))
+    st.session_state["sel_year"] = 2026
 if "sel_month" not in st.session_state:
-    st.session_state["sel_month"] = int(st.query_params.get("mo", 11))
+    st.session_state["sel_month"] = 11
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 ORIGINAL_DIR = r"C:\Users\sdgpk\.gemini\antigravity\scratch\rental_management"
@@ -241,12 +233,10 @@ BUNDLE_DATA = build_full_bundle()
 ICON_DATA_URI = BUNDLE_DATA["assets"].get("icon_192", "")
 
 # ==============================================================================
-# 2. Streamlit 기본 여백/헤더 완전 제거 및 전체화면(100vw x 100dvh) 모바일 뷰포트 적용
+# 2. Streamlit 기본 UI 안전 숨김 (React DOM 충돌 방지: visibility:hidden & opacity:0 전용)
 # ==============================================================================
 st.markdown("""
-<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=0.5, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover" />
 <style>
-    /* 1. 우측 하단 빨간색 Streamlit 워터마크 및 상단/하단 기본 UI 완전 숨김 */
     header[data-testid="stHeader"],
     [data-testid="stToolbar"],
     [data-testid="stDecoration"],
@@ -255,6 +245,7 @@ st.markdown("""
     [data-testid="collapsedControl"],
     [data-testid="manage-app-button"],
     [data-testid="stAppDeployButton"],
+    .stDeployButton,
     .viewerBadge_container__r5tak,
     .viewerBadge_link__qRIco,
     .styles_viewerBadge__CvC9N,
@@ -263,33 +254,25 @@ st.markdown("""
     [class*="StatusWidget"],
     [class*="stAppDeployButton"],
     [class*="profileContainer"],
-    a[href*="streamlit.io/cloud"],
-    a[href*="streamlit.io"],
     #MainMenu,
+    header,
     footer {
-        display: none !important;
         visibility: hidden !important;
         opacity: 0 !important;
         pointer-events: none !important;
-        width: 0 !important;
         height: 0 !important;
-        max-width: 0 !important;
+        min-height: 0 !important;
         max-height: 0 !important;
         overflow: hidden !important;
-        position: fixed !important;
-        bottom: -9999px !important;
-        right: -9999px !important;
-        z-index: -999999 !important;
     }
     html, body, [data-testid="stAppViewContainer"], [data-testid="stApp"], .main, .block-container {
         margin: 0 !important;
         padding: 0 !important;
-        width: 100% !important;
-        max-width: 100% !important;
-        min-height: 100dvh !important;
+        width: 100vw !important;
+        max-width: 100vw !important;
+        height: 100dvh !important;
+        overflow: hidden !important;
         background-color: #f1f5f9 !important;
-        touch-action: auto !important;
-        -webkit-text-size-adjust: 100% !important;
     }
     iframe {
         position: fixed !important;
@@ -302,7 +285,6 @@ st.markdown("""
         padding: 0 !important;
         z-index: 999999 !important;
         display: block !important;
-        touch-action: auto !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -1129,14 +1111,6 @@ MOBILE_WEBAPP_HTML = r"""<!DOCTYPE html>
     </style>
 </head>
 <body>
-    <script>
-        try {
-            window.parent.document.querySelector('meta[name="viewport"]').setAttribute("content", "width=device-width, initial-scale=1.0, user-scalable=yes");
-        } catch (e) {}
-        try {
-            window.top.document.querySelector('meta[name="viewport"]').setAttribute("content", "width=device-width, initial-scale=1.0, user-scalable=yes");
-        } catch (e) {}
-    </script>
 
     <!-- 1. 상단 블루 헤더 -->
     <header class="app-header">
@@ -2781,117 +2755,7 @@ MOBILE_WEBAPP_HTML = r"""<!DOCTYPE html>
                 const mo = document.getElementById('selMonth') ? document.getElementById('selMonth').value : '11';
                 localStorage.setItem('hoegi_sel_year_v2', String(yr));
                 localStorage.setItem('hoegi_sel_month_v2', String(mo));
-                if (window.parent && window.parent.history && window.parent.history.replaceState) {
-                    const url = new URL(window.parent.location.href);
-                    url.searchParams.set('fpct', String(currentFontPct));
-                    url.searchParams.set('tab', String(activeTabName));
-                    url.searchParams.set('yr', String(yr));
-                    url.searchParams.set('mo', String(mo));
-                    window.parent.history.replaceState({}, '', url.toString());
-                }
             } catch (e) {}
-        }
-
-                // [강제 주입 2] Streamlit이 강제 고정해 둔 user-scalable=no 깨기 및 최상위(window.top) 우측하단 빨간 왕관 워터마크 완전 제거
-        function unlockPinchZoomAndHideWatermark() {
-            // 1) 요청하신 정확한 viewport 강제 해제 스크립트 실행 (window.parent.document)
-            try {
-                if (window.parent && window.parent.document) {
-                    const parentVp = window.parent.document.querySelector('meta[name="viewport"]');
-                    if (parentVp) {
-                        parentVp.setAttribute("content", "width=device-width, initial-scale=1.0, user-scalable=yes");
-                    }
-                }
-            } catch (e) {}
-
-            // 2) 자신(document), 부모(window.parent.document), 최상위 호스트(window.top.document) 3단계 모든 프레임에 적용
-            const docs = [document];
-            try { if (window.parent && window.parent.document && !docs.includes(window.parent.document)) docs.push(window.parent.document); } catch (e) {}
-            try { if (window.parent && window.parent.parent && window.parent.parent.document && !docs.includes(window.parent.parent.document)) docs.push(window.parent.parent.document); } catch (e) {}
-            try { if (window.top && window.top.document && !docs.includes(window.top.document)) docs.push(window.top.document); } catch (e) {}
-
-            docs.forEach((doc) => {
-                if (!doc || !doc.head) return;
-                try {
-                    // 모든 기존 viewport 메타태그를 user-scalable=yes로 강제 덮어쓰기
-                    const vps = doc.querySelectorAll('meta[name="viewport"]');
-                    if (vps.length > 0) {
-                        vps.forEach(vp => {
-                            vp.setAttribute("content", "width=device-width, initial-scale=1.0, user-scalable=yes");
-                        });
-                    } else {
-                        const vp = doc.createElement('meta');
-                        vp.name = 'viewport';
-                        vp.setAttribute("content", "width=device-width, initial-scale=1.0, user-scalable=yes");
-                        doc.head.appendChild(vp);
-                    }
-
-                    // 워터마크/푸터/헤더/왕관배지 강제 숨김 CSS 주입
-                    if (!doc.getElementById('hoegi-force-kill-watermark')) {
-                        const st = doc.createElement('style');
-                        st.id = 'hoegi-force-kill-watermark';
-                        st.textContent = `
-                            #MainMenu {visibility: hidden !important; display: none !important;}
-                            footer {visibility: hidden !important; display: none !important;}
-                            header:not(.app-header) {visibility: hidden !important; display: none !important;}
-                            .stDeployButton, [data-testid="stAppDeployButton"] {display: none !important;}
-                            header[data-testid="stHeader"],
-                            [data-testid="stToolbar"],
-                            [data-testid="stDecoration"],
-                            [data-testid="stStatusWidget"],
-                            [data-testid="manage-app-button"],
-                            .viewerBadge_container__r5tak,
-                            .viewerBadge_link__qRIco,
-                            .styles_viewerBadge__CvC9N,
-                            .viewerBadge_container__1QSob,
-                            [class*="viewerBadge"],
-                            [class*="StatusWidget"],
-                            [class*="profileContainer"],
-                            [class*="stActionButton"],
-                            a[href*="streamlit.io/cloud"],
-                            a[href*="streamlit.io"] {
-                                display: none !important;
-                                visibility: hidden !important;
-                                opacity: 0 !important;
-                                pointer-events: none !important;
-                                width: 0 !important;
-                                height: 0 !important;
-                                max-width: 0 !important;
-                                max-height: 0 !important;
-                                position: fixed !important;
-                                bottom: -99999px !important;
-                                right: -99999px !important;
-                                z-index: -999999 !important;
-                            }
-                            html, body {
-                                touch-action: auto !important;
-                            }
-                        `;
-                        doc.head.appendChild(st);
-                    }
-
-                    // 최상위(window.top) 프레임에서 streamlitApp iframe 이외의 모든 플로팅 배지/왕관 마크/Manage app 버튼 물리적 제거
-                    const appIframe = doc.querySelector('iframe[title="streamlitApp"]');
-                    if (appIframe && doc.body) {
-                        doc.body.querySelectorAll('*').forEach(el => {
-                            if (el !== appIframe && !el.contains(appIframe) && !appIframe.contains(el) && el.tagName !== 'SCRIPT' && el.tagName !== 'STYLE') {
-                                el.style.setProperty('display', 'none', 'important');
-                                el.style.setProperty('visibility', 'hidden', 'important');
-                                el.style.setProperty('opacity', '0', 'important');
-                                el.style.setProperty('pointer-events', 'none', 'important');
-                                try { el.remove(); } catch (err) {}
-                            }
-                        });
-                    }
-
-                    // viewerBadge / streamlit.io 링크 요소 직접 탐색 후 제거
-                    doc.querySelectorAll('[class*="viewerBadge"], [data-testid="manage-app-button"], [class*="StatusWidget"], [class*="profileContainer"], .stDeployButton, a[href*="streamlit.io"], footer').forEach(el => {
-                        el.style.setProperty('display', 'none', 'important');
-                        el.style.setProperty('visibility', 'hidden', 'important');
-                        try { el.remove(); } catch (err) {}
-                    });
-                } catch (e) {}
-            });
         }
 
         function switchTab(tab, btn) {
@@ -2934,12 +2798,6 @@ MOBILE_WEBAPP_HTML = r"""<!DOCTYPE html>
             const unitPx = (scale / 1.25).toFixed(4) + 'px';
             document.documentElement.style.setProperty('--fs-scale', String(scale));
             document.documentElement.style.setProperty('--u', unitPx);
-            try {
-                if (window.parent && window.parent.document) {
-                    window.parent.document.documentElement.style.setProperty('--fs-scale', String(scale));
-                    window.parent.document.documentElement.style.setProperty('--u', unitPx);
-                }
-            } catch (e) {}
             const badge = document.getElementById('fontScaleLabel');
             if (badge) badge.textContent = currentFontPct + '%';
             const pcBadge = document.getElementById('pcFontScaleLabel');
@@ -2978,51 +2836,8 @@ MOBILE_WEBAPP_HTML = r"""<!DOCTYPE html>
             syncSessionQueryParams();
         }
 
-
-        // [보조 핀치 줌 엔진] iframe 내부 터치 시에도 두 손가락 벌리기/오므리기로 화면 전체가 부드럽게 확대·축소되도록 지원
-        (function enableTwoFingerPinchZoom() {
-            let initialPinchDist = null;
-            let initialZoom = 1.0;
-            let currentZoom = 1.0;
-
-            function getTouchDist(t1, t2) {
-                const dx = t1.clientX - t2.clientX;
-                const dy = t1.clientY - t2.clientY;
-                return Math.hypot(dx, dy);
-            }
-
-            document.addEventListener('touchstart', function(e) {
-                if (e.touches && e.touches.length === 2) {
-                    initialPinchDist = getTouchDist(e.touches[0], e.touches[1]);
-                    initialZoom = currentZoom;
-                }
-            }, { passive: true });
-
-            document.addEventListener('touchmove', function(e) {
-                if (e.touches && e.touches.length === 2 && initialPinchDist) {
-                    // 브라우저 네이티브 핀치줌이 작동하지 않는 인앱 브라우저/iframe 잠금 환경에서도 본문 영역이 즉시 확대되도록 처리
-                    const vvScale = (window.visualViewport && window.visualViewport.scale) || (window.top && window.top.visualViewport && window.top.visualViewport.scale) || 1;
-                    if (vvScale <= 1.02) {
-                        const dist = getTouchDist(e.touches[0], e.touches[1]);
-                        const ratio = dist / initialPinchDist;
-                        currentZoom = Math.min(3.0, Math.max(0.8, initialZoom * ratio));
-                        const mainEl = document.querySelector('main.container') || document.body;
-                        mainEl.style.zoom = String(currentZoom);
-                    }
-                }
-            }, { passive: true });
-
-            document.addEventListener('touchend', function(e) {
-                if (!e.touches || e.touches.length < 2) {
-                    initialPinchDist = null;
-                }
-            }, { passive: true });
-        })();
-
         (function init() {
             loadState();
-            unlockPinchZoomAndHideWatermark();
-            setInterval(unlockPinchZoomAndHideWatermark, 400);
             const todayStr = new Date().toISOString().split('T')[0];
             const initYear = localStorage.getItem('hoegi_sel_year_v2') || String(INITIAL_BUNDLE.session_year || 2026);
             const initMonth = localStorage.getItem('hoegi_sel_month_v2') || String(INITIAL_BUNDLE.session_month || 11);
