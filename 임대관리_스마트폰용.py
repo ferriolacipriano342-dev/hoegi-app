@@ -416,77 +416,95 @@ MOBILE_WEBAPP_HTML = r"""<!DOCTYPE html>
         }
 
         /* =========================================================
-           2. 글씨 크기 조절 바 ('🔍 글씨 크기' + 슬라이더 + [- 가-] [125%] [+ 가+])
+           2. 상단 글씨 크기 간단 조절 + [⚖️ 법령검색] [📅 구글일정] 퀵 버튼 바
            ========================================================= */
         .font-zoom-bar {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            gap: 8px;
-            margin-top: 10px;
-            padding-top: 9px;
+            gap: 6px;
+            margin-top: 9px;
+            padding-top: 8px;
             border-top: 1px solid rgba(255, 255, 255, 0.28);
-        }
-        .font-zoom-label {
-            font-size: calc(13.5 * var(--u));
-            font-weight: 800;
-            color: #ffffff;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            white-space: nowrap;
-            flex-shrink: 0;
-        }
-        .font-slider-wrap {
-            flex: 1;
-            display: flex;
-            align-items: center;
-            padding: 0 4px;
-            min-width: 50px;
-        }
-        .font-slider {
-            width: 100%;
-            height: 5px;
-            accent-color: #ffffff;
-            cursor: pointer;
-            margin: 0;
+            flex-wrap: nowrap;
         }
         .font-zoom-controls {
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 4px;
             flex-shrink: 0;
+            background: rgba(15, 23, 42, 0.22);
+            padding: 3px 6px;
+            border-radius: 9px;
+            border: 1px solid rgba(255, 255, 255, 0.25);
+        }
+        .font-zoom-label {
+            font-size: 12.5px !important;
+            font-weight: 800;
+            color: #ffffff;
+            display: inline-flex;
+            align-items: center;
+            gap: 2px;
+            white-space: nowrap;
+            margin-right: 2px;
         }
         .fz-btn {
             background: #ffffff;
             color: #0a58ca;
             border: none;
-            border-radius: 8px;
-            padding: 6px 11px;
-            font-size: calc(13.5 * var(--u));
+            border-radius: 6px;
+            padding: 4px 8px;
+            font-size: 12.5px !important;
             font-weight: 900;
             cursor: pointer;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+            box-shadow: 0 1px 2px rgba(0,0,0,0.18);
             white-space: nowrap;
-            display: inline-flex;
-            align-items: center;
-            gap: 3px;
+            line-height: 1.1;
         }
         .fz-btn:active {
-            transform: scale(0.96);
+            transform: scale(0.95);
             background: #e2e8f0;
         }
         .fz-badge {
-            background: rgba(15, 23, 42, 0.38);
             color: #ffffff;
-            border: 1px solid rgba(255, 255, 255, 0.45);
-            border-radius: 8px;
-            padding: 5px 10px;
-            font-size: calc(13.5 * var(--u));
-            font-weight: 800;
-            min-width: 54px;
+            font-size: 12.5px !important;
+            font-weight: 900;
+            min-width: 40px;
             text-align: center;
             cursor: pointer;
+            padding: 2px 3px;
+        }
+        .top-quick-menus {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex: 1;
+            justify-content: flex-end;
+            min-width: 0;
+        }
+        .top-quick-btn {
+            background: rgba(255, 255, 255, 0.95);
+            color: #0a58ca;
+            border: 1.5px solid #ffffff;
+            border-radius: 9px;
+            padding: 6px 10px;
+            font-size: 13px !important;
+            font-weight: 900;
+            cursor: pointer;
+            white-space: nowrap;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.18);
+            flex: 1;
+            max-width: 115px;
+        }
+        .top-quick-btn.active {
+            background: #ffd43b;
+            color: #0f172a;
+            border-color: #fcc419;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.28);
         }
 
         /* =========================================================
@@ -717,14 +735,14 @@ MOBILE_WEBAPP_HTML = r"""<!DOCTYPE html>
         }
 
         /* =========================================================
-           5. 하단 퀵 메뉴 바 고정 (6개 아이콘 + 파란색 글씨 가로 정렬)
+           5. 하단 퀵 메뉴 바 고정 (4대 핵심 메뉴 + 우측 하단 마크 회피 여백 확보)
            ========================================================= */
         .bottom-nav {
             position: fixed;
             bottom: 0;
             left: 0;
             right: 0;
-            min-height: calc(68 * var(--u));
+            min-height: calc(66 * var(--u));
             height: auto;
             background: #ffffff;
             border-top: 1.5px solid #dbeafe;
@@ -733,7 +751,7 @@ MOBILE_WEBAPP_HTML = r"""<!DOCTYPE html>
             justify-content: space-around;
             align-items: center;
             z-index: 200;
-            padding: calc(6 * var(--u)) 2px calc(6 * var(--u) + env(safe-area-inset-bottom)) 2px;
+            padding: calc(6 * var(--u)) 84px calc(6 * var(--u) + env(safe-area-inset-bottom)) 6px;
             box-shadow: 0 -3px 12px rgba(13, 110, 253, 0.08);
         }
         .nav-item {
@@ -1158,16 +1176,18 @@ MOBILE_WEBAPP_HTML = r"""<!DOCTYPE html>
             </div>
         </div>
 
-        <!-- 2. 글씨 크기 조절 바 (슬라이더 + [- 가-] [125%] [+ 가+]) -->
+        <!-- 2. 상단 간단 글씨 크기 조절 + [⚖️ 법령검색] [📅 구글일정] 버튼 -->
         <div class="font-zoom-bar">
-            <div class="font-zoom-label">🔍 글씨 크기</div>
-            <div class="font-slider-wrap">
-                <input type="range" id="fontSlider" class="font-slider" min="85" max="175" step="5" value="125" oninput="onFontSliderChange(this.value)" />
-            </div>
+            <input type="range" id="fontSlider" min="85" max="175" step="5" value="125" oninput="onFontSliderChange(this.value)" style="display:none;" />
             <div class="font-zoom-controls">
-                <button type="button" class="fz-btn" onclick="changeFontSize(-5)">➖ 가-</button>
+                <span class="font-zoom-label">🔍글씨</span>
+                <button type="button" class="fz-btn" onclick="changeFontSize(-5)">➖</button>
                 <span id="fontScaleLabel" class="fz-badge" onclick="resetFontSize()" title="터치하면 125% 기본 크기로 복원">125%</span>
-                <button type="button" class="fz-btn" onclick="changeFontSize(5)">➕ 가+</button>
+                <button type="button" class="fz-btn" onclick="changeFontSize(5)">➕</button>
+            </div>
+            <div class="top-quick-menus">
+                <button type="button" id="nav-law" class="top-quick-btn" onclick="switchTab('law', this)">⚖️ 법령검색</button>
+                <button type="button" id="nav-calendar" class="top-quick-btn" onclick="switchTab('calendar', this)">📅 구글일정</button>
             </div>
         </div>
     </header>
@@ -1688,7 +1708,7 @@ MOBILE_WEBAPP_HTML = r"""<!DOCTYPE html>
 
     <div id="toast" class="toast"></div>
 
-    <!-- 5. 하단 고정식 6개 퀵 메뉴 바 (파란색 글씨 가로 정렬) -->
+    <!-- 5. 하단 고정식 4개 핵심 메뉴 바 (법령검색·구글일정은 상단 이동 + 우측 마크 가림 방지 여백 확보) -->
     <nav class="bottom-nav">
         <button id="nav-pay" class="nav-item active" onclick="switchTab('pay', this)">
             <span class="icon">💰</span>
@@ -1705,14 +1725,6 @@ MOBILE_WEBAPP_HTML = r"""<!DOCTYPE html>
         <button id="nav-alerts" class="nav-item" onclick="switchTab('alerts', this)">
             <span class="icon">🚨</span>
             <span>미납경보</span>
-        </button>
-        <button id="nav-law" class="nav-item" onclick="switchTab('law', this)">
-            <span class="icon">⚖️</span>
-            <span>법령검색</span>
-        </button>
-        <button id="nav-calendar" class="nav-item" onclick="switchTab('calendar', this)">
-            <span class="icon">📅</span>
-            <span>구글일정</span>
         </button>
     </nav>
 
@@ -2846,7 +2858,7 @@ MOBILE_WEBAPP_HTML = r"""<!DOCTYPE html>
                 const el = document.getElementById('tab-' + id);
                 if (el) el.style.display = (id === tab) ? 'block' : 'none';
             });
-            document.querySelectorAll('.bottom-nav .nav-item').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.bottom-nav .nav-item, .top-quick-btn').forEach(el => el.classList.remove('active'));
             const targetMobileBtn = document.getElementById('nav-' + tab);
             if (targetMobileBtn) targetMobileBtn.classList.add('active');
 
